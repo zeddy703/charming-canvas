@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { 
   LayoutDashboard, 
   User, 
@@ -10,22 +9,24 @@ import {
   Award, 
   Compass, 
   Settings,
-  Menu,
   X,
-  ChevronDown
+  ChevronDown,
+  Video
 } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 
 const menuItems = [
-  { icon: LayoutDashboard, label: 'My Dashboard', active: false },
-  { icon: User, label: 'My Profile', active: false },
-  { icon: History, label: 'My Degree History', active: false },
-  { icon: CreditCard, label: 'My Payments', active: false },
-  { icon: PlusCircle, label: 'Create Ticket', active: false },
-  { icon: Ticket, label: 'My Tickets', active: false },
-  { icon: Users, label: 'My Contacts', active: false },
-  { icon: Award, label: 'Valley of Excellence', active: false },
-  { icon: Compass, label: 'Pathfinder', active: true },
-  { icon: Settings, label: 'Mailing Preferences', active: false },
+  { icon: LayoutDashboard, label: 'My Dashboard', path: '/' },
+  { icon: User, label: 'My Profile', path: '/profile' },
+  { icon: History, label: 'My Degree History', path: '/degree-history' },
+  { icon: CreditCard, label: 'My Payments', path: '/payments' },
+  { icon: Video, label: 'Thursday Night at the Rite', path: '/thursday-night' },
+  { icon: Users, label: 'My Contacts', path: '/contacts' },
+  { icon: Compass, label: 'Pathfinder', path: '/' },
+  { icon: PlusCircle, label: 'Create Ticket', path: '#' },
+  { icon: Ticket, label: 'My Tickets', path: '#' },
+  { icon: Award, label: 'Valley of Excellence', path: '#' },
+  { icon: Settings, label: 'Mailing Preferences', path: '#' },
 ];
 
 interface SidebarProps {
@@ -34,6 +35,8 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
+  const location = useLocation();
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -54,7 +57,7 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
         {/* Logo */}
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-lg bg-sidebar-primary flex items-center justify-center">
                 <span className="text-sidebar-primary-foreground font-heading font-bold text-lg">J</span>
               </div>
@@ -62,7 +65,7 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
                 <h1 className="font-heading text-lg font-bold text-sidebar-foreground">Journey</h1>
                 <span className="text-xs text-sidebar-foreground/60">365</span>
               </div>
-            </div>
+            </Link>
             <button 
               onClick={onToggle}
               className="lg:hidden p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground"
@@ -82,17 +85,21 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
 
         {/* Navigation */}
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {menuItems.map((item, index) => (
-            <a
-              key={index}
-              href="#"
-              className={`sidebar-link ${item.active ? 'active' : ''}`}
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              <item.icon size={18} />
-              <span>{item.label}</span>
-            </a>
-          ))}
+          {menuItems.map((item, index) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={index}
+                to={item.path}
+                className={`sidebar-link ${isActive ? 'active' : ''}`}
+                style={{ animationDelay: `${index * 50}ms` }}
+                onClick={onToggle}
+              >
+                <item.icon size={18} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Footer */}
