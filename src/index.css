@@ -150,6 +150,11 @@
     @apply flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all duration-200;
     @apply shadow-sm hover:shadow-md hover:-translate-y-0.5;
   }
+
+  .activity-card {
+    @apply bg-card rounded-xl p-5 border border-border shadow-sm transition-all duration-300;
+    @apply hover:shadow-md hover:border-primary/30;
+  }
 }
 
 @layer utilities {

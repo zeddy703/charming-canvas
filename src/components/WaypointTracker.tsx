@@ -2,12 +2,12 @@ import { Compass } from 'lucide-react';
 import WaypointCard from './WaypointCard';
 
 const waypoints = [
-  { title: 'ORGANIZATION', completed: 1, remaining: 5, color: 'organization' as const },
-  { title: 'SELF-IMPROVEMENT', completed: 2, remaining: 4, color: 'self' as const },
-  { title: 'VALLEY LIFE', completed: 2, remaining: 4, color: 'valley' as const },
-  { title: 'ENRICHMENT PROGRAMS', completed: 1, remaining: 5, color: 'enrichment' as const },
-  { title: 'SERVICE & PHILANTHROPY', completed: 3, remaining: 3, color: 'service' as const },
-  { title: 'CHOICE', completed: 0, remaining: 2, color: 'choice' as const },
+  { id: 'organization', title: 'ORGANIZATION', completed: 1, remaining: 5, color: 'organization' as const },
+  { id: 'self', title: 'SELF-IMPROVEMENT', completed: 2, remaining: 4, color: 'self' as const },
+  { id: 'valley', title: 'VALLEY LIFE', completed: 2, remaining: 4, color: 'valley' as const },
+  { id: 'enrichment', title: 'ENRICHMENT PROGRAMS', completed: 1, remaining: 5, color: 'enrichment' as const },
+  { id: 'service', title: 'SERVICE & PHILANTHROPY', completed: 3, remaining: 3, color: 'service' as const },
+  { id: 'choice', title: 'CHOICE', completed: 0, remaining: 2, color: 'choice' as const },
 ];
 
 const WaypointTracker = () => {
@@ -21,7 +21,7 @@ const WaypointTracker = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {waypoints.map((waypoint, index) => (
           <WaypointCard
-            key={waypoint.title}
+            key={waypoint.id}
             {...waypoint}
             delay={100 * index}
           />
