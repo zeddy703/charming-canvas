@@ -1,6 +1,8 @@
-import { ChevronDown } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface WaypointCardProps {
+  id: string;
   title: string;
   completed: number;
   remaining: number;
@@ -17,16 +19,19 @@ const colorClasses = {
   choice: 'bg-progress-choice',
 };
 
-const WaypointCard = ({ title, completed, remaining, color, delay = 0 }: WaypointCardProps) => {
+const WaypointCard = ({ id, title, completed, remaining, color, delay = 0 }: WaypointCardProps) => {
+  const navigate = useNavigate();
+  
   return (
     <div 
-      className="progress-card animate-fade-in"
+      className="progress-card animate-fade-in cursor-pointer hover:scale-[1.02] transition-transform"
       style={{ animationDelay: `${delay}ms` }}
+      onClick={() => navigate(`/milestone/${id}`)}
     >
       {/* Header */}
       <div className={`waypoint-header ${colorClasses[color]} flex items-center justify-between mb-4`}>
         <span>{title}</span>
-        <ChevronDown size={16} />
+        <ChevronRight size={16} />
       </div>
 
       {/* Stats */}
