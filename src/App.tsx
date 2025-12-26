@@ -10,6 +10,9 @@ import Profile from "./pages/Profile";
 import Payments from "./pages/Payments";
 import ThursdayNight from "./pages/ThursdayNight";
 import Contacts from "./pages/Contacts";
+import MailingPreferences from "./pages/MailingPreferences";
+import MyTickets from "./pages/MyTickets";
+import CreateTicket from "./pages/CreateTicket";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +31,9 @@ const App = () => (
           <Route path="/payments" element={<Payments />} />
           <Route path="/thursday-night" element={<ThursdayNight />} />
           <Route path="/contacts" element={<Contacts />} />
+          <Route path="/mailing-preferences" element={<MailingPreferences />} />
+          <Route path="/my-tickets" element={<MyTickets />} />
+          <Route path="/create-ticket" element={<CreateTicket />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
