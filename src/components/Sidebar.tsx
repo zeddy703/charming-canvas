@@ -25,7 +25,7 @@ const menuItems = [
   { icon: Compass, label: 'Pathfinder', path: '/' },
   { icon: PlusCircle, label: 'Create Ticket', path: '/create-ticket' },
   { icon: Ticket, label: 'My Tickets', path: '/my-tickets' },
-  { icon: Award, label: 'Valley of Excellence', path: '#' },
+  { icon: Award, label: 'Valley of Excellence', path: '/valley-of-excellence' },
   { icon: Settings, label: 'Mailing Preferences', path: '/mailing-preferences' },
 ];
 

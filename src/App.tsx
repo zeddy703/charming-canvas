@@ -13,6 +13,7 @@ import Contacts from "./pages/Contacts";
 import MailingPreferences from "./pages/MailingPreferences";
 import MyTickets from "./pages/MyTickets";
 import CreateTicket from "./pages/CreateTicket";
+import ValleyOfExcellence from "./pages/ValleyOfExcellence";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/mailing-preferences" element={<MailingPreferences />} />
           <Route path="/my-tickets" element={<MyTickets />} />
           <Route path="/create-ticket" element={<CreateTicket />} />
+          <Route path="/valley-of-excellence" element={<ValleyOfExcellence />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
