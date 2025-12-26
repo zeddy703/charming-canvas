@@ -23,10 +23,10 @@ const menuItems = [
   { icon: Video, label: 'Thursday Night at the Rite', path: '/thursday-night' },
   { icon: Users, label: 'My Contacts', path: '/contacts' },
   { icon: Compass, label: 'Pathfinder', path: '/' },
-  { icon: PlusCircle, label: 'Create Ticket', path: '#' },
-  { icon: Ticket, label: 'My Tickets', path: '#' },
+  { icon: PlusCircle, label: 'Create Ticket', path: '/create-ticket' },
+  { icon: Ticket, label: 'My Tickets', path: '/my-tickets' },
   { icon: Award, label: 'Valley of Excellence', path: '#' },
-  { icon: Settings, label: 'Mailing Preferences', path: '#' },
+  { icon: Settings, label: 'Mailing Preferences', path: '/mailing-preferences' },
 ];
 
 interface SidebarProps {
