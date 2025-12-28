@@ -1,8 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
 import { milestones, Activity } from '@/data/milestones';
+import ActivityOverlay from '@/components/ActivityOverlay';
 
 const colorClasses = {
   organization: 'bg-progress-organization',
@@ -20,6 +20,7 @@ const MilestoneDetail = () => {
   const milestone = milestones.find(m => m.id === id);
   
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   
   useEffect(() => {
     if (milestone) {
@@ -33,12 +34,21 @@ const MilestoneDetail = () => {
     }
   }, [id, milestone]);
   
-  const toggleActivity = (activityId: string) => {
+  const handleActivityClick = (activity: Activity) => {
+    setSelectedActivity(activity);
+  };
+
+  const handleCompleteActivity = (activityId: string) => {
     const updated = activities.map(a => 
-      a.id === activityId ? { ...a, completed: !a.completed } : a
+      a.id === activityId ? { ...a, completed: true } : a
     );
     setActivities(updated);
     localStorage.setItem(`milestone-${id}`, JSON.stringify(updated));
+    setSelectedActivity(null);
+  };
+
+  const handleCloseOverlay = () => {
+    setSelectedActivity(null);
   };
   
   if (!milestone) {
@@ -59,22 +69,22 @@ const MilestoneDetail = () => {
         <div className="max-w-4xl mx-auto">
           <button 
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-white/80 hover:text-white mb-4 transition-colors"
+            className="flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-4 transition-colors"
           >
             <ArrowLeft size={20} />
             <span>Back to Dashboard</span>
           </button>
-          <h1 className="text-3xl md:text-4xl font-heading font-bold text-white">
+          <h1 className="text-3xl md:text-4xl font-heading font-bold text-primary-foreground">
             {milestone.title}
           </h1>
-          <p className="text-white/80 mt-2">
+          <p className="text-primary-foreground/80 mt-2">
             {completedCount} of {activities.length} activities completed
           </p>
           
           {/* Progress bar */}
-          <div className="mt-4 h-2 bg-white/20 rounded-full overflow-hidden">
+          <div className="mt-4 h-2 bg-primary-foreground/20 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-white rounded-full transition-all duration-500"
+              className="h-full bg-primary-foreground rounded-full transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -83,29 +93,37 @@ const MilestoneDetail = () => {
       
       {/* Activities List */}
       <div className="max-w-4xl mx-auto p-4 md:p-8">
+        <p className="text-muted-foreground mb-6 text-center">
+          Click on an activity to view details and mark it as complete
+        </p>
         <div className="space-y-4">
           {activities.map((activity, index) => (
             <div 
               key={activity.id}
-              className="activity-card animate-fade-in"
+              className="activity-card animate-fade-in cursor-pointer"
               style={{ animationDelay: `${index * 100}ms` }}
+              onClick={() => handleActivityClick(activity)}
             >
               <div className="flex items-start gap-4">
-                <Checkbox 
-                  id={activity.id}
-                  checked={activity.completed}
-                  onCheckedChange={() => toggleActivity(activity.id)}
-                  className="mt-1 h-5 w-5"
-                />
+                <div 
+                  className={`mt-1 h-5 w-5 rounded border-2 flex items-center justify-center shrink-0 ${
+                    activity.completed 
+                      ? 'bg-primary border-primary' 
+                      : 'border-muted-foreground/30'
+                  }`}
+                >
+                  {activity.completed && (
+                    <CheckCircle2 className="h-4 w-4 text-primary-foreground" />
+                  )}
+                </div>
                 <div className="flex-1">
-                  <label 
-                    htmlFor={activity.id}
-                    className={`block text-lg font-medium cursor-pointer transition-colors ${
+                  <p 
+                    className={`block text-lg font-medium transition-colors ${
                       activity.completed ? 'text-muted-foreground line-through' : 'text-foreground'
                     }`}
                   >
                     {activity.title}
-                  </label>
+                  </p>
                   <p className={`text-sm mt-1 ${
                     activity.completed ? 'text-muted-foreground/60' : 'text-muted-foreground'
                   }`}>
@@ -132,6 +150,15 @@ const MilestoneDetail = () => {
           </div>
         )}
       </div>
+
+      {/* Activity Overlay */}
+      {selectedActivity && (
+        <ActivityOverlay
+          activity={selectedActivity}
+          onClose={handleCloseOverlay}
+          onComplete={handleCompleteActivity}
+        />
+      )}
     </div>
   );
 };
