@@ -7,7 +7,7 @@ import { useParams } from 'react-router-dom';
 interface ActivityOverlayProps {
   activity: Activity;
   onClose: () => void;
-  onComplete: (activityId: string) => void;
+  onComplete: (activityId: string, updatedActivities?: any[]) => void;
 }
 
 // Content mapping for each activity
@@ -105,7 +105,9 @@ const ActivityOverlay = ({ activity, onClose, onComplete }: ActivityOverlayProps
       const json = await res.json();
       console.log("Activity completion response:", json);
       
-      onComplete(activity.id);
+      // Find updated milestone and pass activities back to parent
+      const updatedMilestone = json?.data?.milestones?.find((m: any) => m.id === milestoneId);
+      onComplete(activity.id, updatedMilestone?.activities);
     } catch (err) {
       console.error("Failed to complete activity:", err);
     } finally {

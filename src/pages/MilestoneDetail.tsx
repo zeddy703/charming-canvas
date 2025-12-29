@@ -97,8 +97,10 @@ const MilestoneDetail = () => {
   };
 
   // Handler to complete activity from overlay
-  const handleCompleteActivity = async (activityId) => {
-    await toggleActivity(activityId);
+  const handleCompleteActivity = async (activityId: string, updatedActivities?: any[]) => {
+    if (updatedActivities) {
+      setActivities(updatedActivities);
+    }
     setSelectedActivity(null);
   };
 
