@@ -2,6 +2,7 @@ import { X, BookOpen, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Activity } from '@/data/milestones';
 import { useState } from 'react';
+import { useParams } from 'react-router-dom';
 
 interface ActivityOverlayProps {
   activity: Activity;
@@ -82,15 +83,34 @@ const defaultContent = {
 };
 
 const ActivityOverlay = ({ activity, onClose, onComplete }: ActivityOverlayProps) => {
+  const { id: milestoneId } = useParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const content = activityContent[activity.id] || defaultContent;
 
   const handleComplete = async () => {
     setIsSubmitting(true);
-    // Simulate a brief delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 500));
-    onComplete(activity.id);
-    setIsSubmitting(false);
+    try {
+      const res = await fetch("http://localhost:3000/api/members-center/milestone/progress", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          milestoneId,
+          activityId: activity.id,
+        }),
+      });
+
+      const json = await res.json();
+      console.log("Activity completion response:", json);
+      
+      onComplete(activity.id);
+    } catch (err) {
+      console.error("Failed to complete activity:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
