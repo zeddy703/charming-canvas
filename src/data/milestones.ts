@@ -1,11 +1,11 @@
- interface Activity {
+export interface Activity {
   id: string;
   title: string;
   description: string;
   completed: boolean;
 }
 
- interface Milestone {
+export interface Milestone {
   id: string;
   title: string;
   color: 'organization' | 'self' | 'valley' | 'enrichment' | 'service' | 'choice';
