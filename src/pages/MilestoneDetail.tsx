@@ -98,7 +98,7 @@ const MilestoneDetail = () => {
 
   // Handler to complete activity from overlay
   const handleCompleteActivity = async (activityId) => {
-    await toggleActivity(activityId);
+  //  await toggleActivity(activityId);
     setSelectedActivity(null);
   };
 
@@ -173,7 +173,6 @@ const MilestoneDetail = () => {
                   id={activity.id}
                   checked={activity.completed}
                   disabled={activity.completed}
-                  onCheckedChange={() => toggleActivity(activity.id)}
                   className="mt-1 h-5 w-5"
                   onClick={(e) => e.stopPropagation()}
                 />
@@ -220,6 +219,7 @@ const MilestoneDetail = () => {
         <ActivityOverlay
           activity={selectedActivity}
           onClose={handleCloseOverlay}
+          onComplete={handleCompleteActivity}
         />
       )}
     </div>
