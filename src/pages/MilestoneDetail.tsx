@@ -220,7 +220,6 @@ const MilestoneDetail = () => {
         <ActivityOverlay
           activity={selectedActivity}
           onClose={handleCloseOverlay}
-          onComplete={handleCompleteActivity}
         />
       )}
     </div>
