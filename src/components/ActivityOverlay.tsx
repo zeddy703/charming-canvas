@@ -7,7 +7,7 @@ import { useParams } from 'react-router-dom';
 interface ActivityOverlayProps {
   activity: Activity;
   onClose: () => void;
-  onComplete: (activityId: string) => void;
+  onComplete: (activityId: string, updatedActivities?: any[]) => void;
 }
 
 interface ActivityDetails {
@@ -95,13 +95,9 @@ const ActivityOverlay = ({ activity, onClose, onComplete }: ActivityOverlayProps
       if (!res.ok) throw new Error('Failed to complete activity');
 
       const json = await res.json();
-      if (json.success) {
-        console.log("Activity marked as complete successfully.");
-        onComplete(activity.id);
-        
-      }
-
-  
+      console.log("Activity completion response:", json);
+      
+      onComplete(activity.id);
     } catch (err) {
       console.error("Failed to complete activity:", err);
       // Optionally show a toast/notification here
