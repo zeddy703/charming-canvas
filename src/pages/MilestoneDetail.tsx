@@ -14,40 +14,36 @@ const colorClasses = {
 };
 
 const MilestoneDetail = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [milestone, setMilestone] = useState(null);
-  const [activities, setActivities] = useState([]);
+  const [milestone, setMilestone] = useState<any>(null);
+  const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedActivity, setSelectedActivity] = useState(null);
+  const [selectedActivity, setSelectedActivity] = useState<any>(null);
 
-  // Fetch progress from API
+  // Fetch initial progress
   const fetchProgress = async () => {
-    console.log("Fetching milestone progress for id:", id);
     try {
+      setLoading(true);
       const res = await fetch("http://localhost:3000/api/members-center/milestone/progress", {
         method: "POST",
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ milestoneId: id }),
       });
 
       const json = await res.json();
-      console.log("Received milestone progress data:", json);
-
-      if (!json?.data?.milestones) return;
-
-      const found = json.data.milestones.find((m) => m.id === id);
-
-      if (found) {
-        setMilestone(found);
-        setActivities(found.activities);
+         console.log("Fetched milestone progress:", json);
+      if (json?.data) {
+        const found = json.data;//.find((m: any) => m.id === id);
+        if (found) {
+          setMilestone(found);
+          setActivities(found.activities);
+        }
       }
     } catch (err) {
-      console.error(err);
+      console.error("Failed to fetch milestone progress:", err);
     } finally {
       setLoading(false);
     }
@@ -57,56 +53,33 @@ const MilestoneDetail = () => {
     fetchProgress();
   }, [id]);
 
-  // Complete activity via API
-  const toggleActivity = async (activityId) => {
-    try {
-      const res = await fetch("http://localhost:3000/api/members-center/milestone/progress", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          milestoneId: id,
-          activityId,
-        }),
-      });
+  // Optimistic update when activity is completed from overlay
+  const handleActivityComplete = (activityId: string) => {
+    setActivities(prev =>
+      prev.map(activity =>
+        activity.id === activityId
+          ? { ...activity, completed: true }
+          : activity
+      )
+    );
 
-      const json = await res.json();
-
-      if (!json?.data?.milestones) return;
-
-      const updated = json.data.milestones.find((m) => m.id === id);
-
-      if (updated) {
-        setActivities(updated.activities);
-      }
-    } catch (err) {
-      console.error(err);
-    }
+    // Optional: Update milestone title/progress if needed (but derived below)
+    setSelectedActivity(null); // Close overlay
   };
 
-  // Handler to open activity overlay
-  const handleActivityClick = (activity) => {
+  // Handlers for overlay
+  const handleActivityClick = (activity: any) => {
     setSelectedActivity(activity);
   };
 
-  // Handler to close overlay
   const handleCloseOverlay = () => {
     setSelectedActivity(null);
   };
 
-  // Handler to complete activity from overlay
-  const handleCompleteActivity = async (activityId) => {
-  //  await toggleActivity(activityId);
-  const handleCompleteActivity = async (activityId: string, updatedActivities?: any[]) => {
-    if (updatedActivities) {
-      setActivities(updatedActivities);
-    }
-    setSelectedActivity(null);
-  };
+  // Derived values
+  const completedCount = activities.filter(a => a.completed).length;
+  const progress = activities.length > 0 ? (completedCount / activities.length) * 100 : 0;
 
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -115,7 +88,6 @@ const MilestoneDetail = () => {
     );
   }
 
-  // Milestone not found
   if (!milestone) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -123,10 +95,6 @@ const MilestoneDetail = () => {
       </div>
     );
   }
-
-  const completedCount = activities.filter((a) => a.completed).length;
-  const progress =
-    activities.length > 0 ? (completedCount / activities.length) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -149,32 +117,31 @@ const MilestoneDetail = () => {
             {completedCount} of {activities.length} activities completed
           </p>
 
-          {/* Progress bar */}
           <div className="mt-4 h-2 bg-white/20 rounded-full overflow-hidden">
             <div
-              className="h-full bg-white transition-all"
+              className="h-full bg-white transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
       </div>
 
-      {/* Activities */}
+      {/* Activities List */}
       <div className="max-w-4xl mx-auto p-4 md:p-8">
         <p className="text-muted-foreground mb-6 text-center">
           Click on an activity to view details and mark it as complete
         </p>
+
         <div className="space-y-4">
           {activities.map((activity, index) => (
             <div
               key={activity.id}
-              className="activity-card animate-fade-in cursor-pointer"
+              className="activity-card bg-card border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer animate-fade-in"
               style={{ animationDelay: `${index * 100}ms` }}
               onClick={() => handleActivityClick(activity)}
             >
               <div className="flex items-start gap-4">
                 <Checkbox
-                  id={activity.id}
                   checked={activity.completed}
                   disabled={activity.completed}
                   className="mt-1 h-5 w-5"
@@ -183,8 +150,7 @@ const MilestoneDetail = () => {
 
                 <div className="flex-1">
                   <label
-                    htmlFor={activity.id}
-                    className={`block text-lg font-medium ${
+                    className={`block text-lg font-medium transition-colors ${
                       activity.completed
                         ? "line-through text-muted-foreground"
                         : "text-foreground"
@@ -199,20 +165,20 @@ const MilestoneDetail = () => {
                 </div>
 
                 {activity.completed && (
-                  <CheckCircle2 className="text-primary" size={24} />
+                  <CheckCircle2 className="text-primary flex-shrink-0" size={24} />
                 )}
               </div>
             </div>
           ))}
         </div>
 
-        {/* Completion message */}
+        {/* Milestone Complete Celebration */}
         {completedCount === activities.length && activities.length > 0 && (
-          <div className="mt-8 text-center p-6 bg-primary/10 rounded-xl border">
-            <CheckCircle2 className="mx-auto text-primary mb-3" size={48} />
-            <h3 className="text-xl font-bold">Milestone Complete!</h3>
-            <p className="text-muted-foreground mt-2">
-              Congratulations on completing all activities.
+          <div className="mt-12 text-center p-8 bg-primary/10 rounded-2xl border border-primary/20">
+            <CheckCircle2 className="mx-auto text-primary mb-4 animate-bounce" size={64} />
+            <h3 className="text-2xl font-bold text-foreground">Milestone Complete!</h3>
+            <p className="text-muted-foreground mt-3 text-lg">
+              Congratulations! You've successfully completed all activities in this milestone.
             </p>
           </div>
         )}
@@ -223,7 +189,7 @@ const MilestoneDetail = () => {
         <ActivityOverlay
           activity={selectedActivity}
           onClose={handleCloseOverlay}
-          onComplete={handleCompleteActivity}
+          onComplete={handleActivityComplete} // This triggers instant UI update
         />
       )}
     </div>
