@@ -27,7 +27,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
           </button>
           <div>
             <h1 className="font-heading text-xl font-semibold text-foreground">
-              Pathfinder | <span className="text-muted-foreground">Version 2022.2</span>
+              Pathfinder | <span className="text-muted-foreground">Version 2026.2</span>
             </h1>
           </div>
         </div>
@@ -48,7 +48,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
             <a href="#" className="text-sm text-primary hover:underline hidden sm:block">NMJ Login</a>
             <a href="#" className="text-sm text-primary hover:underline hidden sm:block">Logout</a>
             <div className="flex items-center gap-2 pl-3 border-l border-border">
-              <span className="text-sm font-medium">Hi, Brother!</span>
+              <span className="text-sm font-medium">Hi, Zedekiah!</span>
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                 <User size={16} className="text-primary-foreground" />
               </div>

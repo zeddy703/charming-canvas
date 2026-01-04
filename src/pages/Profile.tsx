@@ -189,14 +189,13 @@ const uploadAvatar = async (file: File) => {
 
     const presignJson = await presignRes.json();
 
-    if (!presignJson.success || !presignJson.url) {
+    if (!presignJson.success || !presignJson.avatarUrl) {
       throw new Error('Invalid pre-signed response');
-    }
-
-    const { avatarUrl } = presignJson.url;
-
-    // Step 2: Upload to S3
-    const uploadRes = await fetch(avatarUrl, {
+    } 
+    const cleanUrl = presignJson.avatarUrl.split('?')[0];
+    //console.log('Received pre-signed URL for upload:', cleanUrl);
+    const { avatarUrl } = presignJson;
+    const uploadRes = await fetch(cleanUrl, {
       method: 'PUT',
       body: file,
       headers: {
@@ -205,9 +204,17 @@ const uploadAvatar = async (file: File) => {
     });
 
     if (!uploadRes.ok) throw new Error('Failed to upload');
-
-    setProfile(prev => ({ ...prev, avatarUrl:  avatarUrl}));
-    setPreviewAvatar(avatarUrl);
+ 
+    const updateRes = await fetch('http://localhost:3000/api/user/account/profile/avatar/save', {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ avatarUrl: cleanUrl }),
+    });
+    if (!updateRes.ok) throw new Error('Failed to save avatar URL');
+     
+    setProfile(prev => ({ ...prev, avatarUrl: cleanUrl }));
+    setPreviewAvatar(cleanUrl);
     setSuccessDialogOpen(true);
   } catch (err) {
     console.error('Avatar upload failed:', err);
