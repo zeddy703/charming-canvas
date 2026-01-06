@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Maximize2, Minimize2, Paperclip, Smile } from 'lucide-react';
+import { MessageCircle, X, Send, Maximize2, Minimize2, Paperclip, Smile, Clock, Check, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -15,12 +15,15 @@ interface Attachment {
   size: number;
 }
 
+type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read';
+
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'support';
   timestamp: Date;
   attachments?: Attachment[];
+  status?: MessageStatus;
 }
 
 // Notification sound as base64 (short beep)
@@ -103,30 +106,53 @@ const ChatSupport = () => {
     setIsEmojiOpen(false);
   };
 
+  const updateMessageStatus = (messageId: string, status: MessageStatus) => {
+    setMessages((prev) =>
+      prev.map((msg) => (msg.id === messageId ? { ...msg, status } : msg))
+    );
+  };
+
   const handleSend = () => {
     if (!inputValue.trim() && pendingAttachments.length === 0) return;
 
+    const messageId = Date.now().toString();
+    const hasAttachments = pendingAttachments.length > 0;
+    
     const newMessage: Message = {
-      id: Date.now().toString(),
+      id: messageId,
       text: inputValue,
       sender: 'user',
       timestamp: new Date(),
-      attachments: pendingAttachments.length > 0 ? [...pendingAttachments] : undefined,
+      attachments: hasAttachments ? [...pendingAttachments] : undefined,
+      status: 'sending',
     };
 
     setMessages((prev) => [...prev, newMessage]);
     setInputValue('');
     setPendingAttachments([]);
 
-    // Show typing indicator
-    setIsTyping(true);
-
-    // Simulate support response
+    // Simulate message being sent
     setTimeout(() => {
+      updateMessageStatus(messageId, 'sent');
+    }, 300);
+
+    // Simulate message being delivered
+    setTimeout(() => {
+      updateMessageStatus(messageId, 'delivered');
+    }, 800);
+
+    // Show typing indicator
+    setTimeout(() => {
+      setIsTyping(true);
+    }, 1000);
+
+    // Simulate support response and mark as read
+    setTimeout(() => {
+      updateMessageStatus(messageId, 'read');
       setIsTyping(false);
       const supportResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: pendingAttachments.length > 0 
+        text: hasAttachments 
           ? 'Thank you for sharing the files. A support representative will review them shortly.'
           : 'Thank you for your message. A support representative will be with you shortly.',
         sender: 'support',
@@ -134,7 +160,7 @@ const ChatSupport = () => {
       };
       setMessages((prev) => [...prev, supportResponse]);
       playNotificationSound();
-    }, 1500);
+    }, 2000);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -237,9 +263,27 @@ const ChatSupport = () => {
                       </div>
                     )}
                     
-                    <span className="text-xs opacity-70 mt-1 block">
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className="text-xs opacity-70">
+                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {message.sender === 'user' && message.status && (
+                        <span className="flex items-center">
+                          {message.status === 'sending' && (
+                            <Clock className="w-3 h-3 opacity-50" />
+                          )}
+                          {message.status === 'sent' && (
+                            <Check className="w-3 h-3 opacity-70" />
+                          )}
+                          {message.status === 'delivered' && (
+                            <CheckCheck className="w-3 h-3 opacity-70" />
+                          )}
+                          {message.status === 'read' && (
+                            <CheckCheck className="w-3 h-3 text-blue-400" />
+                          )}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
