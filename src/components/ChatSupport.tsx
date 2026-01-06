@@ -1,14 +1,26 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Maximize2, Minimize2 } from 'lucide-react';
+import { MessageCircle, X, Send, Maximize2, Minimize2, Paperclip, Smile } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import data from '@emoji-mart/data';
+import Picker from '@emoji-mart/react';
+
+interface Attachment {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
+  size: number;
+}
 
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'support';
   timestamp: Date;
+  attachments?: Attachment[];
 }
 
 // Notification sound as base64 (short beep)
@@ -25,6 +37,7 @@ const ChatSupport = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [isEmojiOpen, setIsEmojiOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -34,8 +47,10 @@ const ChatSupport = () => {
     },
   ]);
   const [inputValue, setInputValue] = useState('');
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     audioRef.current = new Audio(NOTIFICATION_SOUND);
@@ -55,18 +70,53 @@ const ChatSupport = () => {
     }
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newAttachments: Attachment[] = Array.from(files).map((file) => ({
+      id: `${Date.now()}-${file.name}`,
+      name: file.name,
+      type: file.type,
+      url: URL.createObjectURL(file),
+      size: file.size,
+    }));
+
+    setPendingAttachments((prev) => [...prev, ...newAttachments]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeAttachment = (id: string) => {
+    setPendingAttachments((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const handleEmojiSelect = (emoji: any) => {
+    setInputValue((prev) => prev + emoji.native);
+    setIsEmojiOpen(false);
+  };
+
   const handleSend = () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() && pendingAttachments.length === 0) return;
 
     const newMessage: Message = {
       id: Date.now().toString(),
       text: inputValue,
       sender: 'user',
       timestamp: new Date(),
+      attachments: pendingAttachments.length > 0 ? [...pendingAttachments] : undefined,
     };
 
     setMessages((prev) => [...prev, newMessage]);
     setInputValue('');
+    setPendingAttachments([]);
 
     // Show typing indicator
     setIsTyping(true);
@@ -76,7 +126,9 @@ const ChatSupport = () => {
       setIsTyping(false);
       const supportResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: 'Thank you for your message. A support representative will be with you shortly.',
+        text: pendingAttachments.length > 0 
+          ? 'Thank you for sharing the files. A support representative will review them shortly.'
+          : 'Thank you for your message. A support representative will be with you shortly.',
         sender: 'support',
         timestamp: new Date(),
       };
@@ -160,7 +212,31 @@ const ChatSupport = () => {
                         : 'bg-muted text-foreground'
                     }`}
                   >
-                    <p>{message.text}</p>
+                    {message.text && <p>{message.text}</p>}
+                    
+                    {/* Attachments */}
+                    {message.attachments && message.attachments.length > 0 && (
+                      <div className="mt-2 space-y-2">
+                        {message.attachments.map((attachment) => (
+                          <div key={attachment.id} className="rounded overflow-hidden">
+                            {attachment.type.startsWith('image/') ? (
+                              <img
+                                src={attachment.url}
+                                alt={attachment.name}
+                                className="max-w-full rounded"
+                              />
+                            ) : (
+                              <div className="flex items-center gap-2 bg-background/20 p-2 rounded">
+                                <Paperclip className="w-4 h-4 shrink-0" />
+                                <span className="truncate text-xs">{attachment.name}</span>
+                                <span className="text-xs opacity-70">({formatFileSize(attachment.size)})</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
                     <span className="text-xs opacity-70 mt-1 block">
                       {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
@@ -183,9 +259,79 @@ const ChatSupport = () => {
             </div>
           </ScrollArea>
 
+          {/* Pending Attachments Preview */}
+          {pendingAttachments.length > 0 && (
+            <div className="px-3 py-2 border-t border-border bg-muted/50 flex gap-2 flex-wrap shrink-0">
+              {pendingAttachments.map((attachment) => (
+                <div
+                  key={attachment.id}
+                  className="relative group bg-background rounded-lg p-2 flex items-center gap-2 text-xs border"
+                >
+                  {attachment.type.startsWith('image/') ? (
+                    <img
+                      src={attachment.url}
+                      alt={attachment.name}
+                      className="w-10 h-10 object-cover rounded"
+                    />
+                  ) : (
+                    <Paperclip className="w-4 h-4" />
+                  )}
+                  <span className="truncate max-w-[100px]">{attachment.name}</span>
+                  <button
+                    onClick={() => removeAttachment(attachment.id)}
+                    className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Input */}
           <div className="p-3 border-t border-border bg-background shrink-0">
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-end">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                className="hidden"
+                multiple
+                accept="image/*,.pdf,.doc,.docx,.txt"
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                onClick={() => fileInputRef.current?.click()}
+                className="shrink-0"
+              >
+                <Paperclip className="w-4 h-4" />
+              </Button>
+              
+              <Popover open={isEmojiOpen} onOpenChange={setIsEmojiOpen}>
+                <PopoverTrigger asChild>
+                  <Button type="button" size="icon" variant="ghost" className="shrink-0">
+                    <Smile className="w-4 h-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  className="w-auto p-0 border-0" 
+                  side="top" 
+                  align="start"
+                  sideOffset={8}
+                >
+                  <Picker
+                    data={data}
+                    onEmojiSelect={handleEmojiSelect}
+                    theme="light"
+                    previewPosition="none"
+                    skinTonePosition="none"
+                    maxFrequentRows={2}
+                  />
+                </PopoverContent>
+              </Popover>
+
               <Input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
@@ -193,7 +339,11 @@ const ChatSupport = () => {
                 placeholder="Type your message..."
                 className="flex-1"
               />
-              <Button size="icon" onClick={handleSend} disabled={!inputValue.trim()}>
+              <Button 
+                size="icon" 
+                onClick={handleSend} 
+                disabled={!inputValue.trim() && pendingAttachments.length === 0}
+              >
                 <Send className="w-4 h-4" />
               </Button>
             </div>
