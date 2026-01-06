@@ -15,6 +15,7 @@ import MyTickets from "./pages/MyTickets";
 import CreateTicket from "./pages/CreateTicket";
 import ValleyOfExcellence from "./pages/ValleyOfExcellence";
 import NotFound from "./pages/NotFound";
+import ChatSupport from "./components/ChatSupport";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <ChatSupport />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
