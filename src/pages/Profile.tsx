@@ -22,12 +22,16 @@ import { Label } from '@/components/ui/label';
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useToast } from '@/components/ui/use-toast';
+import apiRequest from '@/utils/api';
 
 interface ProfileData {
   firstName: string;
@@ -46,13 +50,37 @@ interface ProfileData {
 }
 
 const Profile = () => {
+  const { toast } = useToast();
+
+  const showToast = ({
+    title,
+    description,
+    type,
+  }: {
+    title?: string;
+    description?: string;
+    type?: 'success' | 'error';
+  }) => {
+    toast({
+      title: title || (type === 'success' ? 'Success' : 'Error'),
+      description:
+        description ||
+        (type === 'success'
+          ? 'Operation completed successfully.'
+          : 'An unexpected error occurred. Please try again.'),
+      variant: type === 'success' ? 'success' : 'destructive',
+    });
+  };
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  // Dialog states
+  // Confirmation dialog for removing avatar
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -77,24 +105,49 @@ const Profile = () => {
   const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Color palette for initials avatar
+  const colorClasses = [
+    'bg-blue-500',
+    'bg-green-500',
+    'bg-purple-500',
+    'bg-teal-500',
+    'bg-indigo-500',
+    'bg-pink-500',
+    'bg-orange-500',
+    'bg-cyan-500',
+  ];
+
+  // Deterministic color based on name
+  const getAvatarColor = () => {
+    if (!profile.firstName && !profile.lastName) return colorClasses[0];
+
+    const nameStr = (profile.firstName + profile.lastName).toLowerCase();
+    let hash = 0;
+    for (let i = 0; i < nameStr.length; i++) {
+      hash = nameStr.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colorClasses.length;
+    return colorClasses[index];
+  };
+
+  const getInitials = () => {
+    if (!profile.firstName || !profile.lastName) return '??';
+    return `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase();
+  };
+
   // Fetch profile data
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setLoading(true);
 
-        const res = await fetch('http://localhost:3000/api/user/account/profile/info', {
+        const res = await apiRequest<any>('/api/user/account/profile/info', {
           method: 'GET',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
         });
 
-        if (!res.ok) throw new Error('Failed to load profile');
+        if (!res?.success) throw new Error('Failed to load profile');
 
-        const json = await res.json();
-        if (!json.success || !json.user) throw new Error('Invalid response format');
-
-        const data = json.user;
+        const data = res.user;
 
         const formattedProfile: ProfileData = {
           firstName: data.firstName || '',
@@ -136,23 +189,16 @@ const Profile = () => {
     });
   };
 
-  const getInitials = () => {
-    if (!profile.firstName || !profile.lastName) return '??';
-    return `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase();
-  };
-
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      setErrorMessage('Please select a valid image file.');
-      setErrorDialogOpen(true);
+      showToast({ title: 'Invalid File Type', description: 'Please select a valid image file.', type: 'error' });
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage('Image must be smaller than 5MB.');
-      setErrorDialogOpen(true);
+      showToast({ title: 'File Too Large', description: 'Image must be smaller than 5MB.', type: 'error' });
       return;
     }
 
@@ -163,113 +209,102 @@ const Profile = () => {
     uploadAvatar(file);
   };
 
-const uploadAvatar = async (file: File) => {
-  setUploadingAvatar(true);
-
-  try {
-    console.log('Uploading avatar:', file.size, 'bytes');
-
-    // Step 1: Request pre-signed URL
-    const presignRes = await fetch(
-      'http://localhost:3000/api/user/account/profile/avatar/presign',
-      {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: file.name,
-          contentType: file.type,
-          fileSize: file.size,
-          fileData: null
-        }),
-      }
-    );
-
-    if (!presignRes.ok) throw new Error('Failed to get pre-signed URL');
-
-    const presignJson = await presignRes.json();
-
-    if (!presignJson.success || !presignJson.avatarUrl) {
-      throw new Error('Invalid pre-signed response');
-    } 
-    const cleanUrl = presignJson.avatarUrl.split('?')[0];
-    //console.log('Received pre-signed URL for upload:', cleanUrl);
-    const { avatarUrl } = presignJson;
-    const uploadRes = await fetch(cleanUrl, {
-      method: 'PUT',
-      body: file,
-      headers: {
-        'Content-Type': file.type,
-      },
-    });
-
-    if (!uploadRes.ok) throw new Error('Failed to upload');
- 
-    const updateRes = await fetch('http://localhost:3000/api/user/account/profile/avatar/save', {
-      method: 'PUT',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ avatarUrl: cleanUrl }),
-    });
-    if (!updateRes.ok) throw new Error('Failed to save avatar URL');
-     
-    setProfile(prev => ({ ...prev, avatarUrl: cleanUrl }));
-    setPreviewAvatar(cleanUrl);
-    setSuccessDialogOpen(true);
-  } catch (err) {
-    console.error('Avatar upload failed:', err);
-    setErrorMessage('Failed to upload image. Please try again.');
-    setErrorDialogOpen(true);
-    setPreviewAvatar(profile.avatarUrl || null);
-  } finally {
-    setUploadingAvatar(false);
-  }
-};
-
-
-  const removeAvatar = async () => {
-    if (!confirm('Remove your profile picture?')) return;
+  const uploadAvatar = async (file: File) => {
+    setUploadingAvatar(true);
 
     try {
-      const res = await fetch('http://localhost:3000/api/members-center/profile/avatar', {
-        method: 'DELETE',
-        credentials: 'include',
+      const presignRes = await apiRequest<{ success: boolean; avatarUrl: string }>(
+        '/api/user/account/profile/avatar/presign',
+        {
+          method: 'POST',
+          body: {
+            filename: file.name,
+            contentType: file.type,
+            fileSize: file.size,
+          },
+        }
+      );
+
+      if (!presignRes?.success) throw new Error('Failed to get pre-signed URL');
+      if (!presignRes?.avatarUrl) throw new Error('Invalid pre-signed response');
+
+      const cleanUrl = presignRes.avatarUrl.split('?')[0];
+
+      const uploadRes = await fetch(cleanUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
       });
 
-      if (!res.ok) throw new Error('Failed to remove avatar');
+      if (!uploadRes.ok) throw new Error('Failed to upload to S3');
 
-      setProfile(prev => ({ ...prev, avatarUrl: undefined }));
-      setPreviewAvatar(null);
-      setSuccessDialogOpen(true);
+      const updateRes = await apiRequest<{ success: boolean }>('/api/user/account/profile/avatar/save', {
+        method: 'PUT',
+        body: { avatarUrl: cleanUrl },
+      });
+
+      if (!updateRes?.success) throw new Error('Failed to save avatar URL');
+
+      setProfile(prev => ({ ...prev, avatarUrl: cleanUrl }));
+      setPreviewAvatar(cleanUrl);
+
+      showToast({
+        title: 'Avatar Uploaded',
+        description: 'Your profile picture has been updated successfully.',
+        type: 'success',
+      });
     } catch (err) {
-      setErrorMessage('Failed to remove avatar.');
-      setErrorDialogOpen(true);
+      console.error('Avatar upload failed:', err);
+      showToast({ title: 'Upload Failed', description: 'Please try again.', type: 'error' });
+      setPreviewAvatar(profile.avatarUrl || null);
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
-  // Save profile
+  const handleRemoveAvatar = async () => {
+    try {
+      const res = await apiRequest<{ success: boolean }>('/api/user/account/profile/avatar/remove', {
+        method: 'DELETE',
+      });
+
+      if (!res?.success) throw new Error('Failed to remove avatar');
+
+      setProfile(prev => ({ ...prev, avatarUrl: undefined }));
+      setPreviewAvatar(null);
+      setRemoveDialogOpen(false);
+      showToast({
+        title: 'Avatar Removed',
+        description: 'Your profile picture has been removed.',
+        type: 'success',
+      });
+    } catch (err) {
+      console.error('Failed to remove avatar:', err);
+      setRemoveDialogOpen(false);
+      showToast({ title: 'Removal Failed', description: 'Please try again.', type: 'error' });
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch('http://localhost:3000/api/user/account/profile/update', {
+      const res = await apiRequest<{ success: boolean }>('/api/user/account/profile/update', {
         method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userData: profile }),
+        body: { userData: profile },
       });
 
-      if (!res.ok) throw new Error('Save failed');
-
-      const json = await res.json();
-      if (!json.success) throw new Error(json.message || 'Save failed');
+      if (!res?.success) throw new Error('Save failed');
 
       setIsEditing(false);
       setOriginalProfile(profile);
-      setSuccessDialogOpen(true);
+      showToast({
+        title: 'Profile Saved',
+        description: 'Your changes have been saved successfully.',
+        type: 'success',
+      });
     } catch (err) {
       console.error('Save failed:', err);
-      setErrorMessage('Failed to save profile. Please try again.');
-      setErrorDialogOpen(true);
+      showToast({ title: 'Save Failed', description: 'Please try again.', type: 'error' });
     } finally {
       setSaving(false);
     }
@@ -292,12 +327,9 @@ const uploadAvatar = async (file: File) => {
 
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
           <div className="max-w-5xl mx-auto">
-            {/* Page Header */}
             <div className="flex items-center justify-between mb-10">
               <div>
-                <h1 className="font-heading text-4xl font-bold text-foreground mb-2">
-                  My Profile
-                </h1>
+                <h1 className="font-heading text-4xl font-bold text-foreground mb-2">My Profile</h1>
                 <p className="text-muted-foreground text-lg">
                   Manage your personal information and profile picture
                 </p>
@@ -335,7 +367,6 @@ const uploadAvatar = async (file: File) => {
               )}
             </div>
 
-            {/* Loading & Error States */}
             {loading ? (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="h-96 bg-card/50 border border-border rounded-2xl animate-pulse" />
@@ -346,25 +377,20 @@ const uploadAvatar = async (file: File) => {
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Avatar & Info Card */}
                 <div className="progress-card p-8 text-center animate-fade-in">
                   <div className="relative inline-block mb-8">
                     <div
-                      className="w-40 h-40 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center cursor-pointer hover:ring-8 hover:ring-primary/20 transition-all shadow-lg"
+                      className="w-40 h-40 rounded-full overflow-hidden flex items-center justify-center cursor-pointer hover:ring-8 hover:ring-primary/20 transition-all shadow-lg"
                       onClick={() => !uploadingAvatar && fileInputRef.current?.click()}
                     >
                       {uploadingAvatar ? (
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
                       ) : previewAvatar ? (
-                        <img
-                          src={previewAvatar}
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={previewAvatar} alt="Profile" className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-5xl font-bold text-primary">
-                          {getInitials()}
-                        </span>
+                        <div className={`w-full h-full ${getAvatarColor()} flex items-center justify-center`}>
+                          <span className="text-5xl font-bold text-white">{getInitials()}</span>
+                        </div>
                       )}
                     </div>
 
@@ -381,16 +407,37 @@ const uploadAvatar = async (file: File) => {
                     />
                   </div>
 
+                  {/* Remove Photo with Confirmation Dialog */}
                   {previewAvatar && !uploadingAvatar && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={removeAvatar}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <X size={16} className="mr-2" />
-                      Remove Photo
-                    </Button>
+                    <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <X size={16} className="mr-2" />
+                          Remove Photo
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Remove Profile Picture?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. Your current profile picture will be permanently deleted.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleRemoveAvatar}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Remove Photo
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   )}
 
                   <h2 className="font-heading text-3xl font-bold text-foreground mt-8">
@@ -413,7 +460,7 @@ const uploadAvatar = async (file: File) => {
                   </div>
                 </div>
 
-                {/* Forms */}
+                {/* Contact & Address Forms */}
                 <div className="lg:col-span-2 space-y-8">
                   <div className="progress-card p-8 animate-fade-in" style={{ animationDelay: '100ms' }}>
                     <h3 className="font-heading text-xl font-semibold mb-6 flex items-center gap-3">
@@ -525,9 +572,7 @@ const uploadAvatar = async (file: File) => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setSuccessDialogOpen(false)}>
-              OK
-            </AlertDialogAction>
+            <AlertDialogAction>OK</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -540,14 +585,10 @@ const uploadAvatar = async (file: File) => {
               <AlertCircle size={24} />
               Error
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              {errorMessage}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{errorMessage}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setErrorDialogOpen(false)}>
-              OK
-            </AlertDialogAction>
+            <AlertDialogAction>OK</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

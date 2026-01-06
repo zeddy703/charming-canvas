@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Compass, Loader2 } from 'lucide-react';
 import WaypointCard from './WaypointCard';
+import apiRequest from '@/utils/api';
 
 // Static list of waypoints (order MUST match API response array)
 const WAYPOINTS = [
@@ -21,25 +22,17 @@ const WaypointTracker = () => {
       try {
         setLoading(true);
 
-        const res = await fetch('http://localhost:3000/api/members-center/milestone/progress/stats', {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+        const res = await apiRequest<{ success: boolean; data: any[] }>('/api/members-center/milestone/progress/stats', {
+          method: 'GET'
         });
-
-        const json = await res.json();
-        console.log('Fetched waypoint progress:', json);
-
-        if (!json.success || !Array.isArray(json.data)) {
+        if (!res.success || !Array.isArray(res.data)) {
           console.error('Invalid progress response');
           return;
         }
 
         // Map API array directly to our progress state
         // Each index corresponds to the waypoint in WAYPOINTS array
-        setProgress(json.data.map((item: any) => ({
+        setProgress(res.data.map((item: any) => ({
           completed: item.completed,
           total: item.totalActivities,
         })));

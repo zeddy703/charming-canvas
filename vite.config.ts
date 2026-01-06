@@ -6,10 +6,19 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
+    host: "::",        // Listen on all interfaces (useful for tunneling)
     port: 8080,
+    hmr: {
+      // Critical fix for tunnels (ngrok, devtunnels.ms, etc.)
+      clientPort: 443,
+      // Optional: helps in some cases if you have path issues
+      // path: '/hmr',
+    },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    react(),
+    mode === "development" && componentTagger(),
+  ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

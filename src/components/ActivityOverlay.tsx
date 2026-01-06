@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Activity } from '@/data/milestones';
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import apiRequest from '@/utils/api';
 
 interface ActivityOverlayProps {
   activity: Activity;
@@ -28,22 +29,14 @@ const ActivityOverlay = ({ activity, onClose, onComplete }: ActivityOverlayProps
         setLoading(true);
         setError(null);
 
-        const response = await fetch(
+        const response = await apiRequest<{ success: boolean; data: ActivityDetails }>(
           `http://localhost:3000/api/members-center/milestone/progress/activity/${activity.id}`,
           {
             method: 'GET',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-            },
           }
         );
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
+        const result = response;
 
         if (!result.success || !result.data) {
           throw new Error('Invalid response format');
@@ -80,23 +73,18 @@ const ActivityOverlay = ({ activity, onClose, onComplete }: ActivityOverlayProps
   const handleComplete = async () => {
     setIsSubmitting(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/members-center/milestone/progress`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          milestoneId: milestoneId,
-          activityId: activity.id,
-        }),
-      });
+  const res = await apiRequest<{ success: boolean }>(`/api/members-center/milestone/progress`, {
+    method: "POST",
+    body: {
+      milestoneId: milestoneId,
+      activityId: activity.id,
+    },
+  });
       console.log("sending request, milestoneId:", milestoneId, "activityId:", activity.id);
-      if (!res.ok) throw new Error('Failed to complete activity');
 
-      const json = await res.json();
-      console.log("Activity completion response:", json);
-      
+      if (!res?.success) {
+        throw new Error('Failed to complete activity');
+      }
       onComplete(activity.id);
     } catch (err) {
       console.error("Failed to complete activity:", err);

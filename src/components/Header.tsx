@@ -1,7 +1,14 @@
+import { useState, useEffect } from 'react';
 import { Menu, LogOut, User } from 'lucide-react';
+import apiRequest from '@/utils/api'; // Your reusable API function
 
 interface HeaderProps {
   onMenuToggle: () => void;
+}
+
+interface UserProfile {
+  firstName: string;
+  avatarUrl?: string;
 }
 
 const tabs = [
@@ -14,12 +21,63 @@ const tabs = [
 ];
 
 const Header = ({ onMenuToggle }: HeaderProps) => {
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch user profile on mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await apiRequest<{ success: boolean; user: UserProfile }>(
+          '/api/user/account/profile/info',
+          { method: 'GET' }
+        );
+
+        if (response.success && response.user) {
+          setUser({
+            firstName: response.user.firstName,
+            avatarUrl: response.user.avatarUrl || undefined,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch user profile:', err);
+        // Fallback to default name/photo
+        setUser({ firstName: 'User' });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  // Initials fallback with colored background
+  const getInitials = () => {
+    if (!user?.firstName) return '??';
+    return user.firstName.charAt(0).toUpperCase();
+  };
+
+  const colorClasses = [
+    'bg-blue-500',
+    'bg-green-500',
+    'bg-purple-500',
+    'bg-teal-500',
+    'bg-indigo-500',
+    'bg-pink-500',
+  ];
+
+  const getAvatarColor = () => {
+    if (!user?.firstName) return colorClasses[0];
+    const index = user.firstName.charCodeAt(0) % colorClasses.length;
+    return colorClasses[index];
+  };
+
   return (
     <header className="bg-card border-b border-border sticky top-0 z-30">
       {/* Top Bar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-4">
-          <button 
+          <button
             onClick={onMenuToggle}
             className="lg:hidden p-2 rounded-lg hover:bg-muted text-foreground"
           >
@@ -47,10 +105,28 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
           <div className="flex items-center gap-3">
             <a href="#" className="text-sm text-primary hover:underline hidden sm:block">NMJ Login</a>
             <a href="#" className="text-sm text-primary hover:underline hidden sm:block">Logout</a>
-            <div className="flex items-center gap-2 pl-3 border-l border-border">
-              <span className="text-sm font-medium">Hi, Zedekiah!</span>
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                <User size={16} className="text-primary-foreground" />
+            <div className="flex items-center gap-3 pl-3 border-l border-border">
+              <span className="text-sm font-medium">
+                {loading ? 'Loading...' : `Hi, ${user?.firstName || 'User'}!`}
+              </span>
+
+              {/* Avatar */}
+              <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-border flex items-center justify-center">
+                {loading ? (
+                  <div className="w-full h-full bg-muted animate-pulse" />
+                ) : user?.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.firstName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className={`w-full h-full ${getAvatarColor()} flex items-center justify-center`}>
+                    <span className="text-lg font-bold text-white">
+                      {getInitials()}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
