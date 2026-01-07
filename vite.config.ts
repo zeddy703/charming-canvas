@@ -8,12 +8,12 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",        // Listen on all interfaces (useful for tunneling)
     port: 8080,
-    hmr: {
+    /*hmr: {
       // Critical fix for tunnels (ngrok, devtunnels.ms, etc.)
       clientPort: 443,
       // Optional: helps in some cases if you have path issues
       // path: '/hmr',
-    },
+    },*/
   },
   plugins: [
     react(),
