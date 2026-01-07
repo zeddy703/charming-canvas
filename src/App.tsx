@@ -16,32 +16,35 @@ import CreateTicket from "./pages/CreateTicket";
 import ValleyOfExcellence from "./pages/ValleyOfExcellence";
 import NotFound from "./pages/NotFound";
 import ChatSupport from "./components/ChatSupport";
+import SessionExpiredProvider from "./components/SessionExpiredProvider";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/milestone/:id" element={<MilestoneDetail />} />
-          <Route path="/degree-history" element={<DegreeHistory />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/payments" element={<Payments />} />
-          <Route path="/thursday-night" element={<ThursdayNight />} />
-          <Route path="/contacts" element={<Contacts />} />
-          <Route path="/mailing-preferences" element={<MailingPreferences />} />
-          <Route path="/my-tickets" element={<MyTickets />} />
-          <Route path="/create-ticket" element={<CreateTicket />} />
-          <Route path="/valley-of-excellence" element={<ValleyOfExcellence />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <ChatSupport />
-      </BrowserRouter>
+      <SessionExpiredProvider loginUrl="/login">
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/milestone/:id" element={<MilestoneDetail />} />
+            <Route path="/degree-history" element={<DegreeHistory />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/payments" element={<Payments />} />
+            <Route path="/thursday-night" element={<ThursdayNight />} />
+            <Route path="/contacts" element={<Contacts />} />
+            <Route path="/mailing-preferences" element={<MailingPreferences />} />
+            <Route path="/my-tickets" element={<MyTickets />} />
+            <Route path="/create-ticket" element={<CreateTicket />} />
+            <Route path="/valley-of-excellence" element={<ValleyOfExcellence />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <ChatSupport />
+        </BrowserRouter>
+      </SessionExpiredProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -1,8 +1,7 @@
 // src/utils/api.ts
-import { useToast } from '@/components/ui/use-toast';
+import { triggerSessionExpired } from '@/components/SessionExpiredDialog';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-
 interface ApiOptions {
   method: HttpMethod;
   body?: Record<string, any> | FormData;
@@ -86,6 +85,12 @@ async function apiRequest<T = any>(
   }
 
   if (!response.ok) {
+    // Handle 401 Unauthorized - session expired
+    if (response.status === 401) {
+      triggerSessionExpired();
+      throw new ApiError('Session expired', 401, data);
+    }
+
     const message =
       data?.message ||
       data?.error || `An unexpected error occurred. Please try again.`;
