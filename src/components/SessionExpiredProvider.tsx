@@ -11,7 +11,7 @@ interface SessionExpiredProviderProps {
 
 const SessionExpiredProvider = ({ 
   children, 
-  loginUrl = 'http://localhost:3000/actions/social-login/auth/login?redirect=63ab42acbe1008c46bae760317da154175c5e18250cfcbeae7a96f64710d8302/after-login&provider=j365'
+  loginUrl = import.meta.env.VITE_LOGIN_REDIRECT_URL || '/Account/Login'
 }: SessionExpiredProviderProps) => {
   const [showDialog, setShowDialog] = useState(false);
 
@@ -33,7 +33,7 @@ const SessionExpiredProvider = ({
       <SessionExpiredDialog 
         open={showDialog} 
         onOpenChange={setShowDialog}
-        loginUrl={`http://localhost:3000/actions/social-login/auth/login?redirect=63ab42acbe1008c46bae760317da154175c5e18250cfcbeae7a96f64710d8302/after-login&provider=j365`}
+        loginUrl={loginUrl}
       />
     </>
   );
