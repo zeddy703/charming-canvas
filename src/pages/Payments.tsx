@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import apiRequest from '@/utils/api';
+import PaymentConfirmationDialog from '@/components/PaymentConfirmationDialog';
 
 interface PaymentMethod {
   id: string;
@@ -56,6 +57,14 @@ const Payments = () => {
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Payment confirmation dialog state
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState({
+    checkoutId: '',
+    shortcode: '',
+    timestamp: '',
+  });
 
   // Data states
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -141,7 +150,12 @@ const Payments = () => {
         payload.phone = phoneNumber.trim();
       }
 
-      const res = await apiRequest<{ success: boolean; transactionId?: string }>(
+      const res = await apiRequest<{ 
+        success: boolean; 
+        checkoutId?: string;
+        shortcode?: string;
+        timestamp?: string;
+      }>(
         '/api/initiate/payment/services',
         {
           method: 'POST',
@@ -149,21 +163,18 @@ const Payments = () => {
         }
       );
 
-      if (res.success) {
-        toast({
-          title: 'Payment Initiated',
-          description: `Your ${method.name} payment is being processed.`,
+      if (res.success && res.checkoutId) {
+        // Store payment details for polling
+        setPaymentDetails({
+          checkoutId: res.checkoutId,
+          shortcode: res.shortcode || '',
+          timestamp: res.timestamp || new Date().toISOString(),
         });
-
-        if (requiresPhone) {
-          toast({
-            title: 'Check Your Phone',
-            description: 'You should receive a payment prompt shortly.',
-          });
-        }
-
+        
+        // Close payment method dialog and open confirmation dialog
         setIsPaymentOpen(false);
         setPhoneNumber('');
+        setIsConfirmationOpen(true);
       }
     } catch (err) {
       toast({
@@ -174,6 +185,24 @@ const Payments = () => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    // Refresh payment history after successful payment
+    toast({
+      title: 'Payment Successful',
+      description: 'Your payment has been processed successfully.',
+    });
+    // Optionally refresh the page data
+    window.location.reload();
+  };
+
+  const handlePaymentFailure = (message: string) => {
+    toast({
+      title: 'Payment Failed',
+      description: message,
+      variant: 'destructive',
+    });
   };
 
   if (loading) {
@@ -392,6 +421,17 @@ const Payments = () => {
           </div>
         </main>
       </div>
+
+      {/* Payment Confirmation Dialog with Polling */}
+      <PaymentConfirmationDialog
+        open={isConfirmationOpen}
+        onOpenChange={setIsConfirmationOpen}
+        checkoutId={paymentDetails.checkoutId}
+        shortcode={paymentDetails.shortcode}
+        timestamp={paymentDetails.timestamp}
+        onSuccess={handlePaymentSuccess}
+        onFailure={handlePaymentFailure}
+      />
     </div>
   );
 };
