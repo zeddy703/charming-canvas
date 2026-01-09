@@ -85,7 +85,6 @@ async function apiRequest<T = any>(
   }
 
   if (!response.ok) {
-    // Handle 401 Unauthorized - session expired
     if (response.status === 401) {
       triggerSessionExpired();
       throw new ApiError('Session expired', 401, data);

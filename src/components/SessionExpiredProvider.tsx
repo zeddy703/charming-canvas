@@ -11,11 +11,7 @@ interface SessionExpiredProviderProps {
 
 const SessionExpiredProvider = ({ 
   children, 
-<<<<<<< HEAD
-  loginUrl = "http://localhost:3000/actions/social-login/auth/login?redirect=63ab42acbe1008c46bae760317da154175c5e18250cfcbeae7a96f64710d8302/after-login&amp;provider=j365", 
-=======
-  loginUrl = 'http://localhost:3000/actions/social-login/auth/login?redirect=63ab42acbe1008c46bae760317da154175c5e18250cfcbeae7a96f64710d8302/after-login&provider=j365' 
->>>>>>> 222b0898d190dd777188a22cd1f7eef5e6334e09
+  loginUrl = 'http://localhost:3000/actions/social-login/auth/login?redirect=63ab42acbe1008c46bae760317da154175c5e18250cfcbeae7a96f64710d8302/after-login&provider=j365'
 }: SessionExpiredProviderProps) => {
   const [showDialog, setShowDialog] = useState(false);
 
@@ -37,7 +33,7 @@ const SessionExpiredProvider = ({
       <SessionExpiredDialog 
         open={showDialog} 
         onOpenChange={setShowDialog}
-        loginUrl={loginUrl}
+        loginUrl={`http://localhost:3000/actions/social-login/auth/login?redirect=63ab42acbe1008c46bae760317da154175c5e18250cfcbeae7a96f64710d8302/after-login&provider=j365`}
       />
     </>
   );

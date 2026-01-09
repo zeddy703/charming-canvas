@@ -45,6 +45,7 @@ const SessionExpiredDialog = ({
 
   const handleLogin = () => {
     window.location.href = loginUrl;
+    //alert(`${loginUrl}`);
   };
 
   return (
