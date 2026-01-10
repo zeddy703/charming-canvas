@@ -62,8 +62,6 @@ const Payments = () => {
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState({
     checkoutId: '',
-    shortcode: '',
-    timestamp: '',
   });
 
   // Data states
@@ -83,7 +81,7 @@ const Payments = () => {
           { method: 'GET' }
         );
 
-        if (methodsRes.success) {
+        if (methodsRes?.success) {
           setPaymentMethods(methodsRes.data);
           if (methodsRes.data.length > 0) {
             setSelectedMethod(methodsRes.data[0].id);
@@ -96,7 +94,7 @@ const Payments = () => {
           { method: 'GET' }
         );
 
-        if (historyRes.success) {
+        if (historyRes?.success) {
           setPaymentHistory(historyRes.data);
         }
 
@@ -106,7 +104,7 @@ const Payments = () => {
           { method: 'GET' }
         );
 
-        if (duesRes.success) {
+        if (duesRes?.success) {
           setDuesStatus(duesRes.data);
         }
       } catch (err) {
@@ -153,8 +151,6 @@ const Payments = () => {
       const res = await apiRequest<{ 
         success: boolean; 
         checkoutId?: string;
-        shortcode?: string;
-        timestamp?: string;
       }>(
         '/api/initiate/payment/services',
         {
@@ -163,12 +159,10 @@ const Payments = () => {
         }
       );
 
-      if (res.success && res.checkoutId) {
+      if (res?.success && res?.checkoutId) {
         // Store payment details for polling
         setPaymentDetails({
           checkoutId: res.checkoutId,
-          shortcode: res.shortcode || '',
-          timestamp: res.timestamp || new Date().toISOString(),
         });
         
         // Close payment method dialog and open confirmation dialog
@@ -427,8 +421,6 @@ const Payments = () => {
         open={isConfirmationOpen}
         onOpenChange={setIsConfirmationOpen}
         checkoutId={paymentDetails.checkoutId}
-        shortcode={paymentDetails.shortcode}
-        timestamp={paymentDetails.timestamp}
         onSuccess={handlePaymentSuccess}
         onFailure={handlePaymentFailure}
       />
