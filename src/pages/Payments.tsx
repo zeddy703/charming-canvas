@@ -32,7 +32,7 @@ interface PaymentHistoryItem {
   description: string;
   amount: number;
   date: string;
-  status: 'paid' | 'pending' | 'failed';
+  status: 'completed' | 'pending' | 'failed';
 }
 
 interface DuesStatus {
@@ -90,7 +90,7 @@ const Payments = () => {
 
         // Fetch payment history
         const historyRes = await apiRequest<{ success: boolean; data: PaymentHistoryItem[] }>(
-          '/api/payments/history',
+          '/api/initiate/payments/transactions/history',
           { method: 'GET' }
         );
 
@@ -393,16 +393,18 @@ const Payments = () => {
                           <CheckCircle className="text-primary" size={20} />
                         </div>
                         <div>
-                          <p className="font-medium">{payment.description}</p>
+                          <p className="font-medium">{payment.description || 'No description'}</p>
                           <p className="text-sm text-muted-foreground">{payment.date}</p>
                         </div>
                       </div>
                       <div className="text-right">
                         <p className="font-bold">${payment.amount.toFixed(2)}</p>
                         <span className={`text-xs px-2 py-1 rounded-full ${
-                          payment.status === 'paid' 
+                          payment.status === 'completed' 
                             ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
+                            : payment.status === 'pending'
+                             ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
                         }`}>
                           {payment.status.toUpperCase()}
                         </span>
