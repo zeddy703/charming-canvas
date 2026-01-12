@@ -166,53 +166,53 @@ const Notifications = () => {
       <div className="flex-1 lg:ml-64">
         <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
 
-        <main className="p-4 md:p-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <main className="p-2 sm:p-4 md:p-6">
+          <Card className="border-0 sm:border shadow-none sm:shadow-sm">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-4 px-3 sm:px-6">
               <div>
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Bell className="w-5 h-5" />
+                <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                  <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
                   Notifications
                 </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'All caught up!'}
                 </p>
               </div>
               {unreadCount > 0 && (
-                <Button variant="outline" size="sm" onClick={markAllAsRead}>
+                <Button variant="outline" size="sm" onClick={markAllAsRead} className="w-full sm:w-auto">
                   <CheckCheck className="w-4 h-4 mr-2" />
                   Mark all as read
                 </Button>
               )}
             </CardHeader>
 
-            <CardContent>
-              <ScrollArea className="h-[calc(100vh-280px)]">
+            <CardContent className="px-2 sm:px-6">
+              <ScrollArea className="h-[calc(100vh-220px)] sm:h-[calc(100vh-280px)]">
                 {loading ? (
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {[1, 2, 3, 4, 5].map(i => (
-                      <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />
+                      <div key={i} className="h-20 sm:h-24 bg-muted animate-pulse rounded-lg" />
                     ))}
                   </div>
                 ) : notifications.length === 0 ? (
-                  <div className="py-16 text-center text-muted-foreground">
-                    <Bell className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <h3 className="text-lg font-medium">No notifications</h3>
-                    <p className="text-sm mt-1">You're all caught up!</p>
+                  <div className="py-12 sm:py-16 text-center text-muted-foreground">
+                    <Bell className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 opacity-50" />
+                    <h3 className="text-base sm:text-lg font-medium">No notifications</h3>
+                    <p className="text-xs sm:text-sm mt-1">You're all caught up!</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     {notifications.map(notification => (
                       <div
                         key={notification.id}
-                        className={`p-4 rounded-lg border-l-4 transition-all ${getTypeStyles(notification.type)} ${
+                        className={`p-3 sm:p-4 rounded-lg border-l-4 transition-all ${getTypeStyles(notification.type)} ${
                           !notification.read ? 'bg-opacity-100' : 'opacity-75'
                         }`}
                       >
-                        <div className="flex items-start gap-3">
-                          <div className="mt-0.5">{getTypeIcon(notification.type)}</div>
+                        <div className="flex items-start gap-2 sm:gap-3">
+                          <div className="mt-0.5 shrink-0">{getTypeIcon(notification.type)}</div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2">
                               <h4 className={`text-sm ${!notification.read ? 'font-semibold' : 'font-medium'} text-foreground`}>
                                 {notification.title}
                                 {!notification.read && (
@@ -223,25 +223,25 @@ const Notifications = () => {
                                 {formatDate(notification.createdAt)}
                               </span>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-1">
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2 sm:line-clamp-none">
                               {notification.message}
                             </p>
-                            <div className="flex items-center gap-2 mt-3">
+                            <div className="flex items-center gap-1 sm:gap-2 mt-2 sm:mt-3">
                               {!notification.read && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-7 text-xs"
+                                  className="h-7 text-xs px-2 sm:px-3"
                                   onClick={() => markAsRead(notification.id)}
                                 >
                                   <Check className="w-3 h-3 mr-1" />
-                                  Mark as read
+                                  <span className="hidden xs:inline">Mark as </span>read
                                 </Button>
                               )}
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 text-xs text-destructive hover:text-destructive"
+                                className="h-7 text-xs text-destructive hover:text-destructive px-2 sm:px-3"
                                 onClick={() => deleteNotification(notification.id)}
                               >
                                 <Trash2 className="w-3 h-3 mr-1" />
