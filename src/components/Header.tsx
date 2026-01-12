@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Menu, LogOut, User } from 'lucide-react';
-import apiRequest from '@/utils/api'; // Your reusable API function
+import apiRequest from '@/utils/api';
+import NotificationDropdown from '@/components/NotificationDropdown';
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -103,6 +104,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
 
           {/* User Actions */}
           <div className="flex items-center gap-3">
+            <NotificationDropdown />
             <a href="#" className="text-sm text-primary hover:underline hidden sm:block">NMJ Login</a>
             <a href="#" className="text-sm text-primary hover:underline hidden sm:block">Logout</a>
             <div className="flex items-center gap-3 pl-3 border-l border-border">

@@ -14,6 +14,7 @@ import MailingPreferences from "./pages/MailingPreferences";
 import MyTickets from "./pages/MyTickets";
 import CreateTicket from "./pages/CreateTicket";
 import ValleyOfExcellence from "./pages/ValleyOfExcellence";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 import ChatSupport from "./components/ChatSupport";
 import SessionExpiredProvider from "./components/SessionExpiredProvider";
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/my-tickets" element={<MyTickets />} />
             <Route path="/create-ticket" element={<CreateTicket />} />
             <Route path="/valley-of-excellence" element={<ValleyOfExcellence />} />
+            <Route path="/notifications" element={<Notifications />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
