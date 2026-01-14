@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import apiRequest from '@/utils/api';
+import { z } from 'zod';
 
 interface UserProfile {
   firstName: string;
@@ -21,6 +22,45 @@ interface PaypalPaymentOverlayProps {
 
 type Step = 'loading-profile' | 'confirm-info' | 'processing-payment' | 'error';
 
+// Zod validation schema
+const paypalFormSchema = z.object({
+  firstName: z
+    .string()
+    .trim()
+    .min(1, 'First name is required')
+    .max(50, 'First name must be less than 50 characters')
+    .regex(/^[a-zA-Z\s'-]+$/, 'First name can only contain letters, spaces, hyphens, and apostrophes'),
+  lastName: z
+    .string()
+    .trim()
+    .min(1, 'Last name is required')
+    .max(50, 'Last name must be less than 50 characters')
+    .regex(/^[a-zA-Z\s'-]+$/, 'Last name can only contain letters, spaces, hyphens, and apostrophes'),
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Email is required')
+    .email('Please enter a valid email address')
+    .max(255, 'Email must be less than 255 characters'),
+  phone: z
+    .string()
+    .trim()
+    .optional()
+    .refine(
+      (val) => !val || /^\+?[0-9\s\-()]{7,20}$/.test(val),
+      'Please enter a valid phone number (7-20 digits, may include +, spaces, hyphens, or parentheses)'
+    ),
+});
+
+type PaypalFormData = z.infer<typeof paypalFormSchema>;
+
+interface FieldErrors {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+}
+
 const PaypalPaymentOverlay = ({
   isOpen,
   onClose,
@@ -29,6 +69,7 @@ const PaypalPaymentOverlay = ({
 }: PaypalPaymentOverlayProps) => {
   const [step, setStep] = useState<Step>('loading-profile');
   const [error, setError] = useState<string>('');
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   
   // Form state
   const [firstName, setFirstName] = useState('');
@@ -45,6 +86,7 @@ const PaypalPaymentOverlay = ({
   const fetchUserProfile = async () => {
     setStep('loading-profile');
     setError('');
+    setFieldErrors({});
     
     try {
       const res = await apiRequest<{ success: boolean; data: UserProfile }>(
@@ -66,17 +108,35 @@ const PaypalPaymentOverlay = ({
     }
   };
 
-  const handleProceed = async () => {
-    // Validate required fields
-    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
-      setError('Please fill in all required fields.');
-      return;
+  const validateForm = (): PaypalFormData | null => {
+    setFieldErrors({});
+    setError('');
+
+    const result = paypalFormSchema.safeParse({
+      firstName,
+      lastName,
+      email,
+      phone: phone || undefined,
+    });
+
+    if (!result.success) {
+      const errors: FieldErrors = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as keyof FieldErrors;
+        if (!errors[field]) {
+          errors[field] = err.message;
+        }
+      });
+      setFieldErrors(errors);
+      return null;
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setError('Please enter a valid email address.');
+    return result.data;
+  };
+
+  const handleProceed = async () => {
+    const validatedData = validateForm();
+    if (!validatedData) {
       return;
     }
 
@@ -122,6 +182,7 @@ const PaypalPaymentOverlay = ({
     // Reset state
     setStep('loading-profile');
     setError('');
+    setFieldErrors({});
     setFirstName('');
     setLastName('');
     setEmail('');
@@ -185,10 +246,16 @@ const PaypalPaymentOverlay = ({
                     <Input
                       id="firstName"
                       value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
+                      onChange={(e) => {
+                        setFirstName(e.target.value);
+                        if (fieldErrors.firstName) setFieldErrors(prev => ({ ...prev, firstName: undefined }));
+                      }}
                       placeholder="Enter first name"
-                      className="mt-1.5"
+                      className={`mt-1.5 ${fieldErrors.firstName ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     />
+                    {fieldErrors.firstName && (
+                      <p className="text-xs text-destructive mt-1">{fieldErrors.firstName}</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="lastName" className="text-sm font-medium">
@@ -197,10 +264,16 @@ const PaypalPaymentOverlay = ({
                     <Input
                       id="lastName"
                       value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
+                      onChange={(e) => {
+                        setLastName(e.target.value);
+                        if (fieldErrors.lastName) setFieldErrors(prev => ({ ...prev, lastName: undefined }));
+                      }}
                       placeholder="Enter last name"
-                      className="mt-1.5"
+                      className={`mt-1.5 ${fieldErrors.lastName ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     />
+                    {fieldErrors.lastName && (
+                      <p className="text-xs text-destructive mt-1">{fieldErrors.lastName}</p>
+                    )}
                   </div>
                 </div>
 
@@ -212,10 +285,16 @@ const PaypalPaymentOverlay = ({
                     id="email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: undefined }));
+                    }}
                     placeholder="Enter your email"
-                    className="mt-1.5"
+                    className={`mt-1.5 ${fieldErrors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   />
+                  {fieldErrors.email && (
+                    <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
+                  )}
                 </div>
 
                 <div>
@@ -226,10 +305,16 @@ const PaypalPaymentOverlay = ({
                     id="phone"
                     type="tel"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => {
+                      setPhone(e.target.value);
+                      if (fieldErrors.phone) setFieldErrors(prev => ({ ...prev, phone: undefined }));
+                    }}
                     placeholder="Enter your phone number"
-                    className="mt-1.5"
+                    className={`mt-1.5 ${fieldErrors.phone ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   />
+                  {fieldErrors.phone && (
+                    <p className="text-xs text-destructive mt-1">{fieldErrors.phone}</p>
+                  )}
                 </div>
               </div>
 
