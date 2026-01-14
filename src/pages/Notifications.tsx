@@ -87,7 +87,6 @@ const Notifications = () => {
       );
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
-      // Still update locally
       setNotifications(prev =>
         prev.map(n => (n.id === id ? { ...n, read: true } : n))
       );
@@ -100,7 +99,6 @@ const Notifications = () => {
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     } catch (err) {
       console.error('Failed to mark all as read:', err);
-      // Still update locally
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     }
   };
@@ -111,7 +109,6 @@ const Notifications = () => {
       setNotifications(prev => prev.filter(n => n.id !== id));
     } catch (err) {
       console.error('Failed to delete notification:', err);
-      // Still update locally
       setNotifications(prev => prev.filter(n => n.id !== id));
     }
   };
@@ -132,13 +129,13 @@ const Notifications = () => {
   const getTypeIcon = (type: Notification['type']) => {
     switch (type) {
       case 'success':
-        return <Check className="w-5 h-5 text-green-500" />;
+        return <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />;
       case 'warning':
-        return <Bell className="w-5 h-5 text-yellow-500" />;
+        return <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />;
       case 'error':
-        return <Bell className="w-5 h-5 text-red-500" />;
+        return <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />;
       default:
-        return <Bell className="w-5 h-5 text-primary" />;
+        return <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />;
     }
   };
 
@@ -150,8 +147,8 @@ const Notifications = () => {
     const days = Math.floor(diff / 86400000);
 
     if (hours < 1) return 'Just now';
-    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric',
@@ -166,85 +163,102 @@ const Notifications = () => {
       <div className="flex-1 lg:ml-64">
         <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
 
-        <main className="p-4 md:p-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <div>
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Bell className="w-5 h-5" />
+        <main className="p-3 sm:p-4 md:p-6 lg:p-8">
+          <Card className="border-0 sm:border">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between space-y-3 sm:space-y-0 pb-4 px-4 sm:px-6">
+              <div className="flex-1">
+                <CardTitle className="text-lg sm:text-xl md:text-2xl flex items-center gap-2">
+                  <Bell className="w-5 h-5 sm:w-6 sm:h-6" />
                   Notifications
                 </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'All caught up!'}
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  {unreadCount > 0 
+                    ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` 
+                    : 'All caught up!'}
                 </p>
               </div>
               {unreadCount > 0 && (
-                <Button variant="outline" size="sm" onClick={markAllAsRead}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={markAllAsRead} 
+                  className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10"
+                >
                   <CheckCheck className="w-4 h-4 mr-2" />
                   Mark all as read
                 </Button>
               )}
             </CardHeader>
 
-            <CardContent>
-              <ScrollArea className="h-[calc(100vh-280px)]">
+            <CardContent className="px-2 sm:px-4 md:px-6">
+              <ScrollArea className="h-[calc(100vh-200px)] sm:h-[calc(100vh-240px)] md:h-[calc(100vh-280px)] pr-2 sm:pr-4">
                 {loading ? (
-                  <div className="space-y-4">
+                  <div className="space-y-2 sm:space-y-3">
                     {[1, 2, 3, 4, 5].map(i => (
-                      <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />
+                      <div 
+                        key={i} 
+                        className="h-24 sm:h-28 md:h-32 bg-muted animate-pulse rounded-lg" 
+                      />
                     ))}
                   </div>
                 ) : notifications.length === 0 ? (
-                  <div className="py-16 text-center text-muted-foreground">
-                    <Bell className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <h3 className="text-lg font-medium">No notifications</h3>
-                    <p className="text-sm mt-1">You're all caught up!</p>
+                  <div className="py-12 sm:py-16 md:py-20 text-center text-muted-foreground">
+                    <Bell className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-4 opacity-50" />
+                    <h3 className="text-base sm:text-lg md:text-xl font-medium">No notifications</h3>
+                    <p className="text-xs sm:text-sm mt-2">You're all caught up!</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     {notifications.map(notification => (
                       <div
                         key={notification.id}
-                        className={`p-4 rounded-lg border-l-4 transition-all ${getTypeStyles(notification.type)} ${
+                        className={`p-3 sm:p-4 md:p-5 rounded-lg border-l-4 transition-all ${getTypeStyles(notification.type)} ${
                           !notification.read ? 'bg-opacity-100' : 'opacity-75'
                         }`}
                       >
-                        <div className="flex items-start gap-3">
-                          <div className="mt-0.5">{getTypeIcon(notification.type)}</div>
+                        <div className="flex items-start gap-2 sm:gap-3">
+                          <div className="mt-0.5 flex-shrink-0">
+                            {getTypeIcon(notification.type)}
+                          </div>
+                          
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <h4 className={`text-sm ${!notification.read ? 'font-semibold' : 'font-medium'} text-foreground`}>
-                                {notification.title}
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <h4 className={`text-sm sm:text-base ${
+                                !notification.read ? 'font-semibold' : 'font-medium'
+                              } text-foreground flex items-center gap-2 flex-wrap`}>
+                                <span className="break-words">{notification.title}</span>
                                 {!notification.read && (
-                                  <span className="ml-2 inline-block w-2 h-2 bg-primary rounded-full" />
+                                  <span className="inline-block w-2 h-2 bg-primary rounded-full flex-shrink-0" />
                                 )}
                               </h4>
-                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
                                 {formatDate(notification.createdAt)}
                               </span>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-1">
+                            
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2 leading-relaxed break-words">
                               {notification.message}
                             </p>
-                            <div className="flex items-center gap-2 mt-3">
+                            
+                            <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2 mt-3 sm:mt-4">
                               {!notification.read && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-7 text-xs"
+                                  className="h-8 sm:h-9 text-xs sm:text-sm w-full xs:w-auto justify-center xs:justify-start"
                                   onClick={() => markAsRead(notification.id)}
                                 >
-                                  <Check className="w-3 h-3 mr-1" />
+                                  <Check className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
                                   Mark as read
                                 </Button>
                               )}
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 text-xs text-destructive hover:text-destructive"
+                                className="h-8 sm:h-9 text-xs sm:text-sm text-destructive hover:text-destructive w-full xs:w-auto justify-center xs:justify-start"
                                 onClick={() => deleteNotification(notification.id)}
                               >
-                                <Trash2 className="w-3 h-3 mr-1" />
+                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
                                 Delete
                               </Button>
                             </div>
