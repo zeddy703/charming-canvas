@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import apiRequest from '@/utils/api';
 import PaymentConfirmationDialog from '@/components/PaymentConfirmationDialog';
+import PaypalPaymentOverlay from '@/components/PaypalPaymentOverlay';
 
 interface PaymentMethod {
   id: string;
@@ -63,6 +64,9 @@ const Payments = () => {
   const [paymentDetails, setPaymentDetails] = useState({
     checkoutId: '',
   });
+
+  // PayPal overlay state
+  const [isPaypalOverlayOpen, setIsPaypalOverlayOpen] = useState(false);
 
   // Data states
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -125,6 +129,13 @@ const Payments = () => {
   const handleMakePayment = async () => {
     const method = paymentMethods.find(m => m.id === selectedMethod);
     if (!method) return;
+
+    // Handle PayPal separately with overlay flow
+    if (method.id === 'paypal') {
+      setIsPaymentOpen(false);
+      setIsPaypalOverlayOpen(true);
+      return;
+    }
 
     const requiresPhone = method.id === 'mpesa' || method.id === 'airtel-money';
     if (requiresPhone && !phoneNumber.trim()) {
@@ -425,6 +436,14 @@ const Payments = () => {
         checkoutId={paymentDetails.checkoutId}
         onSuccess={handlePaymentSuccess}
         onFailure={handlePaymentFailure}
+      />
+
+      {/* PayPal Payment Overlay */}
+      <PaypalPaymentOverlay
+        isOpen={isPaypalOverlayOpen}
+        onClose={() => setIsPaypalOverlayOpen(false)}
+        amount={duesStatus?.amount || 155.00}
+        methodId="paypal"
       />
     </div>
   );
