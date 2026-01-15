@@ -22,6 +22,7 @@ const menuItems = [
   { icon: CreditCard, label: 'My Payments', path: '/payments' },
   { icon: Video, label: 'Thursday Night at the Rite', path: '/thursday-night' },
   { icon: Users, label: 'My Contacts', path: '/contacts' },
+  { icon: Award, label: 'My Achievements', path: '/my-achievements' },
   { icon: Compass, label: 'Pathfinder', path: '/' },
   { icon: PlusCircle, label: 'Create Ticket', path: '/create-ticket' },
   { icon: Ticket, label: 'My Tickets', path: '/my-tickets' },

@@ -14,6 +14,7 @@ import MailingPreferences from "./pages/MailingPreferences";
 import MyTickets from "./pages/MyTickets";
 import CreateTicket from "./pages/CreateTicket";
 import ValleyOfExcellence from "./pages/ValleyOfExcellence";
+import MyAchievements from "./pages/MyAchievements";
 import Notifications from "./pages/Notifications";
 import PaypalSuccess from "./pages/PaypalSuccess";
 import PaypalCancel from "./pages/PaypalCancel";
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/my-tickets" element={<MyTickets />} />
             <Route path="/create-ticket" element={<CreateTicket />} />
             <Route path="/valley-of-excellence" element={<ValleyOfExcellence />} />
+            <Route path="/my-achievements" element={<MyAchievements />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/paypal/success" element={<PaypalSuccess />} />
             <Route path="/paypal/cancel" element={<PaypalCancel />} />
