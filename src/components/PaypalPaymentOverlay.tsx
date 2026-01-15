@@ -89,16 +89,16 @@ const PaypalPaymentOverlay = ({
     setFieldErrors({});
     
     try {
-      const res = await apiRequest<{ success: boolean; data: UserProfile }>(
+      const res = await apiRequest<{ success: boolean; user: UserProfile }>(
         '/api/user/account/profile/info',
         { method: 'GET', showErrorToast: false }
       );
 
-      if (res?.success && res?.data) {
-        setFirstName(res.data.firstName || '');
-        setLastName(res.data.lastName || '');
-        setEmail(res.data.email || '');
-        setPhone(res.data.phone || '');
+      if (res?.success && res?.user) {
+        setFirstName(res.user.firstName || '');
+        setLastName(res.user.lastName || '');
+        setEmail(res.user.email || '');
+        setPhone(res.user.phone || '');
       }
       
       setStep('confirm-info');
@@ -167,7 +167,6 @@ const PaypalPaymentOverlay = ({
       );
 
       if (res?.success && res?.url) {
-        // Redirect to PayPal
         window.location.href = res.url;
       } else {
         throw new Error(res?.message || 'Failed to initiate PayPal payment.');

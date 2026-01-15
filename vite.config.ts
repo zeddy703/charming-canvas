@@ -5,14 +5,14 @@ import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "0.0.0.0", // ✅ allow binding
+    host: "0.0.0.0",
     port: 8080,
     strictPort: true,
 
     hmr: {
-      host: "j365.localhost", // ✅ browser connects here
-      protocol: "ws",
-      port: 8080,
+      host: "travelers-nothing-individual-completed.trycloudflare.com", // ✅ Your tunnel URL
+      protocol: "wss",
+      clientPort: 443,
     },
   },
 
