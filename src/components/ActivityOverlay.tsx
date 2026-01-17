@@ -30,7 +30,7 @@ const ActivityOverlay = ({ activity, onClose, onComplete }: ActivityOverlayProps
         setError(null);
 
         const response = await apiRequest<{ success: boolean; data: ActivityDetails }>(
-          `http://localhost:3000/api/members-center/milestone/progress/activity/${activity.id}`,
+          `/api/members-center/milestone/progress/activity/${activity.id}`,
           {
             method: 'GET',
           }

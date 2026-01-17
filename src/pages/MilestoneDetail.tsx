@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import ActivityOverlay from "@/components/ActivityOverlay";
-
+import apiRequest from "@/utils/api";
 const colorClasses = {
   organization: "bg-progress-organization",
   self: "bg-progress-self",
@@ -26,17 +26,12 @@ const MilestoneDetail = () => {
   const fetchProgress = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:3000/api/members-center/milestone/progress", {
+      const res = await apiRequest<any>("/api/members-center/milestone/progress", {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ milestoneId: id }),
+        body: { milestoneId: id },
       });
-
-      const json = await res.json();
-         console.log("Fetched milestone progress:", json);
-      if (json?.data) {
-        const found = json.data;//.find((m: any) => m.id === id);
+      if (res.success && res?.data) {
+        const found = res.data;
         if (found) {
           setMilestone(found);
           setActivities(found.activities);
