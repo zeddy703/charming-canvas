@@ -19,6 +19,7 @@ import Notifications from "./pages/Notifications";
 import PaypalSuccess from "./pages/PaypalSuccess";
 import PaypalCancel from "./pages/PaypalCancel";
 import NotFound from "./pages/NotFound";
+import Error from "./pages/Error";
 import ChatSupport from "./components/ChatSupport";
 import SessionExpiredProvider from "./components/SessionExpiredProvider";
 
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/payments/id/paypal/success" element={<PaypalSuccess />} />
             <Route path="/payments/id/paypal/cancel" element={<PaypalCancel />} />
+            <Route path="/error" element={<Error />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
