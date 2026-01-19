@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
 
     hmr: {
-      host: "https://vegetation-cent-celebrity-management.trycloudflare.com", // ✅ Your tunnel URL
+      host: "https://lime-infringement-ministers-authority.trycloudflare.com", // ✅ Your tunnel URL
       protocol: "wss",
       clientPort: 443,
     },

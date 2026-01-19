@@ -9,7 +9,7 @@ const PaypalSuccess = () => {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
-  const transactionRef = searchParams.get("token") || searchParams.get("paymentId") || searchParams.get("ref");
+  const transactionRef = searchParams.get("receipt") || searchParams.get("paymentId") || searchParams.get("ref");
 
   const copyToClipboard = () => {
     if (transactionRef) {
