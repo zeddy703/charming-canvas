@@ -26,6 +26,7 @@ interface PaymentMethod {
   name: string;
   description: string;
   icon: 'CreditCard' | 'Wallet' | 'Smartphone';
+  currency: 'USD' | 'KES';
 }
 
 interface PaymentHistoryItem {
@@ -73,7 +74,14 @@ const Payments = () => {
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
   const [duesStatus, setDuesStatus] = useState<DuesStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exchangeRate, setExchangeRate] = useState<number>(1);
 
+  // Get selected payment method and calculate display amount
+  const selectedPaymentMethod = paymentMethods.find(m => m.id === selectedMethod);
+  const baseAmount = duesStatus?.amount || 155.00;
+  const isKES = selectedPaymentMethod?.currency === 'KES';
+  const displayAmount = isKES ? baseAmount * exchangeRate : baseAmount;
+  const currencySymbol = isKES ? 'KSH ' : '$';
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -110,6 +118,16 @@ const Payments = () => {
 
         if (duesRes?.success) {
           setDuesStatus(duesRes.data);
+        }
+
+        // Fetch exchange rate for USD to KES
+        const rateRes = await apiRequest<{ success: boolean; data: { rate: number } }>(
+          '/api/initiate/payments/exchange-rate',
+          { method: 'GET' }
+        );
+
+        if (rateRes?.success) {
+          setExchangeRate(rateRes.data.rate);
         }
       } catch (err) {
         console.error('Failed to load payment data:', err);
@@ -344,11 +362,18 @@ const Payments = () => {
                       )}
 
                       <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                        <div className="flex justify-between">
+                        <div className="flex justify-between items-center">
                           <span className="font-medium">Total Amount:</span>
-                          <span className="font-bold text-xl">
-                            ${duesStatus?.amount?.toFixed(2) || '155.00'}
-                          </span>
+                          <div className="text-right">
+                            <span className="font-bold text-xl">
+                              {currencySymbol}{displayAmount.toFixed(2)}
+                            </span>
+                            {isKES && (
+                              <p className="text-xs text-muted-foreground">
+                                (${baseAmount.toFixed(2)} × {exchangeRate.toFixed(2)})
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
 
