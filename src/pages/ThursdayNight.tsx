@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
+import EventRegistrationDialog from '@/components/EventRegistrationDialog';
 import { Video, Calendar, Clock, Users, Play, Lock, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -18,6 +19,23 @@ const pastEvents = [
 
 const ThursdayNight = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [watchedIds, setWatchedIds] = useState<Set<number>>(new Set());
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
+
+  const allPast = useMemo(() => pastEvents, []);
+
+  const handleWatch = (eventId: number, isWatched: boolean) => {
+    setWatchedIds(prev => {
+      const newSet = new Set(prev);
+      if (isWatched) {
+        newSet.delete(eventId);
+      } else {
+        newSet.add(eventId);
+      }
+      return newSet;
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
