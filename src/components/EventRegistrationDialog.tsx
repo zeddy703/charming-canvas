@@ -117,6 +117,8 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
 
   // Payment
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
+  const [mobilePhoneNumber, setMobilePhoneNumber] = useState('');
+  const [phoneError, setPhoneError] = useState('');
 
   // Errors
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -181,6 +183,26 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
 
   const handlePaymentSelect = (methodId: string) => {
     setSelectedPaymentMethod(methodId);
+    setMobilePhoneNumber('');
+    setPhoneError('');
+  };
+
+  const validatePhoneNumber = (): boolean => {
+    if (selectedPaymentMethod === 'mpesa' || selectedPaymentMethod === 'airtel') {
+      const cleanPhone = mobilePhoneNumber.replace(/\s/g, '');
+      // Validate Kenyan phone number format
+      const phoneRegex = /^(?:\+254|254|0)?[17]\d{8}$/;
+      if (!cleanPhone) {
+        setPhoneError(`Please enter your ${selectedPaymentMethod === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} phone number`);
+        return false;
+      }
+      if (!phoneRegex.test(cleanPhone)) {
+        setPhoneError('Please enter a valid Kenyan phone number');
+        return false;
+      }
+    }
+    setPhoneError('');
+    return true;
   };
 
   const handleSubmit = async () => {
@@ -190,6 +212,10 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
         description: 'Please select a payment method',
         variant: 'destructive',
       });
+      return;
+    }
+
+    if (!validatePhoneNumber()) {
       return;
     }
 
@@ -226,6 +252,8 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
     setValley('');
     setAgreeTerms(false);
     setAgreePrivacy(false);
+    setMobilePhoneNumber('');
+    setPhoneError('');
     setAgreeCode(false);
     setSelectedPaymentMethod(null);
     setFieldErrors({});
@@ -420,6 +448,30 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
               ))}
             </div>
 
+            {/* Phone Number Input for M-Pesa/Airtel */}
+            {(selectedPaymentMethod === 'mpesa' || selectedPaymentMethod === 'airtel') && (
+              <div className="space-y-2">
+                <Label htmlFor="mobilePhone">
+                  {selectedPaymentMethod === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} Phone Number{' '}
+                  <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="mobilePhone"
+                  type="tel"
+                  value={mobilePhoneNumber}
+                  onChange={(e) => setMobilePhoneNumber(e.target.value)}
+                  placeholder={selectedPaymentMethod === 'mpesa' ? 'e.g., 0712345678' : 'e.g., 0733123456'}
+                  className={phoneError ? 'border-destructive' : ''}
+                />
+                {phoneError && (
+                  <p className="text-sm text-destructive">{phoneError}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Enter the phone number registered with your {selectedPaymentMethod === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} account
+                </p>
+              </div>
+            )}
+
             <div className="p-3 bg-muted/50 rounded-lg">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Amount to Pay:</span>
@@ -433,7 +485,7 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={!selectedPaymentMethod}
+                disabled={!selectedPaymentMethod || ((selectedPaymentMethod === 'mpesa' || selectedPaymentMethod === 'airtel') && !mobilePhoneNumber)}
                 className="flex-1"
               >
                 Pay Now
