@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { z } from 'zod';
+import apiRequest from '@/utils/api';
 import {
   Dialog,
   DialogContent,
@@ -119,6 +120,8 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [mobilePhoneNumber, setMobilePhoneNumber] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  const [exchangeRate, setExchangeRate] = useState<number>(1);
+  const [loadingRate, setLoadingRate] = useState(false);
 
   // Errors
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -126,6 +129,37 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
 
   const isFreeEvent = event.isFree ?? true;
   const eventPrice = event.price ?? 0;
+
+  // Calculate display amount based on selected payment method
+  const isMobilePayment = selectedPaymentMethod === 'mpesa' || selectedPaymentMethod === 'airtel';
+  const displayAmount = isMobilePayment ? eventPrice * exchangeRate : eventPrice;
+  const currencySymbol = isMobilePayment ? 'KSH ' : '$';
+
+  // Fetch exchange rate when dialog opens
+  useEffect(() => {
+    const fetchExchangeRate = async () => {
+      if (!isOpen || isFreeEvent) return;
+      
+      setLoadingRate(true);
+      try {
+        const response = await apiRequest<{ success: boolean; data: { rate: number } }>(
+          '/api/initiate/payments/exchange-rate',
+          { method: 'GET', showErrorToast: false }
+        );
+        if (response?.success) {
+          setExchangeRate(response.data.rate);
+        }
+      } catch (error) {
+        console.error('Failed to fetch exchange rate:', error);
+        // Use fallback rate if API fails
+        setExchangeRate(130);
+      } finally {
+        setLoadingRate(false);
+      }
+    };
+
+    fetchExchangeRate();
+  }, [isOpen, isFreeEvent]);
 
   // Sanitize input to prevent XSS
   const sanitizeInput = (input: string): string => {
@@ -473,9 +507,24 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
             )}
 
             <div className="p-3 bg-muted/50 rounded-lg">
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Amount to Pay:</span>
-                <span className="font-bold text-lg">${eventPrice.toFixed(2)}</span>
+                <div className="text-right">
+                  {loadingRate && isMobilePayment ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  ) : (
+                    <>
+                      <span className="font-bold text-lg">
+                        {currencySymbol}{displayAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                      {isMobilePayment && (
+                        <p className="text-xs text-muted-foreground">
+                          (${eventPrice.toFixed(2)} × {exchangeRate.toFixed(2)})
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
