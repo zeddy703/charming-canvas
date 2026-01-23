@@ -1,13 +1,25 @@
 import { useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
-import { Video, Calendar, Clock, Users, Play, Lock, CheckCircle } from 'lucide-react';
+import { Video, Calendar, Clock, Users, Play, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import EventRegistrationDialog from '@/components/EventRegistrationDialog';
 
-const upcomingEvents = [
-  { id: 1, degree: "7°", name: "Provost and Judge", date: "December 26, 2024", time: "7:00 PM EST", registered: true },
-  { id: 2, degree: "10°", name: "Master Elect", date: "January 9, 2025", time: "7:00 PM EST", registered: false },
-  { id: 3, degree: "12°", name: "Grand Master Architect", date: "January 23, 2025", time: "7:00 PM EST", registered: false },
+interface UpcomingEvent {
+  id: number;
+  degree: string;
+  name: string;
+  date: string;
+  time: string;
+  registered: boolean;
+  isFree?: boolean;
+  price?: number;
+}
+
+const upcomingEvents: UpcomingEvent[] = [
+  { id: 1, degree: "7°", name: "Provost and Judge", date: "December 26, 2024", time: "7:00 PM EST", registered: true, isFree: true },
+  { id: 2, degree: "10°", name: "Master Elect", date: "January 9, 2025", time: "7:00 PM EST", registered: false, isFree: false, price: 25.00 },
+  { id: 3, degree: "12°", name: "Grand Master Architect", date: "January 23, 2025", time: "7:00 PM EST", registered: false, isFree: true },
 ];
 
 const pastEvents = [
@@ -18,6 +30,13 @@ const pastEvents = [
 
 const ThursdayNight = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<UpcomingEvent | null>(null);
+
+  const handleRegisterClick = (event: UpcomingEvent) => {
+    setSelectedEvent(event);
+    setRegistrationDialogOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -90,7 +109,7 @@ const ThursdayNight = () => {
                         Registered
                       </span>
                     ) : (
-                      <Button size="sm">Register</Button>
+                      <Button size="sm" onClick={() => handleRegisterClick(event)}>Register</Button>
                     )}
                   </div>
                 ))}
@@ -134,6 +153,18 @@ const ThursdayNight = () => {
           </div>
         </main>
       </div>
+
+      {/* Registration Dialog */}
+      {selectedEvent && (
+        <EventRegistrationDialog
+          isOpen={registrationDialogOpen}
+          onClose={() => {
+            setRegistrationDialogOpen(false);
+            setSelectedEvent(null);
+          }}
+          event={selectedEvent}
+        />
+      )}
     </div>
   );
 };
