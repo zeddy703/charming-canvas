@@ -21,7 +21,7 @@ const Error = () => {
         </h1>
         
         <p className="mb-4 text-muted-foreground">
-          {errorMessage || "An unexpected error occurred. Please try again later."}
+          {`${errorMessage}` || "An unexpected error occurred. Please try again later."}
         </p>
         
         {errorDetails && (

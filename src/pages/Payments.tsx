@@ -75,6 +75,7 @@ const Payments = () => {
   const [duesStatus, setDuesStatus] = useState<DuesStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [exchangeRate, setExchangeRate] = useState<number>(1);
+  const [currency, setCurrency] = useState<string>('USD');
 
   // Get selected payment method and calculate display amount
   const selectedPaymentMethod = paymentMethods.find(m => m.id === selectedMethod);
@@ -88,12 +89,14 @@ const Payments = () => {
         setLoading(true);
 
         // Fetch payment methods
-        const methodsRes = await apiRequest<{ success: boolean; data: PaymentMethod[] }>(
+        const methodsRes = await apiRequest<{ success: boolean; data: PaymentMethod[]; rate: number; currency: string }>(
           '/api/initiate/payments/methods',
           { method: 'GET' }
         );
 
         if (methodsRes?.success) {
+          setExchangeRate(methodsRes.rate);
+          setCurrency(methodsRes.currency);
           setPaymentMethods(methodsRes.data);
           if (methodsRes.data.length > 0) {
             setSelectedMethod(methodsRes.data[0].id);
@@ -120,15 +123,6 @@ const Payments = () => {
           setDuesStatus(duesRes.data);
         }
 
-        // Fetch exchange rate for USD to KES
-        const rateRes = await apiRequest<{ success: boolean; data: { rate: number } }>(
-          '/api/initiate/payments/exchange-rate',
-          { method: 'GET' }
-        );
-
-        if (rateRes?.success) {
-          setExchangeRate(rateRes.data.rate);
-        }
       } catch (err) {
         console.error('Failed to load payment data:', err);
         toast({
@@ -155,7 +149,7 @@ const Payments = () => {
       return;
     }
 
-    const requiresPhone = method.id === 'mpesa' || method.id === 'airtel-money';
+    const requiresPhone = method.id === 'mpesa' || method.id === 'airtelmoney';
     if (requiresPhone && !phoneNumber.trim()) {
       toast({
         title: 'Phone Number Required',
