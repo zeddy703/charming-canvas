@@ -258,6 +258,7 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
 
     try {
       // Simulate API call
+      
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       setStep('success');

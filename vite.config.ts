@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
 
     hmr: {
-      host: "activists-ste-ensures-deny.trycloudflare.com", // ✅ Your tunnel URL
+      host: "cleaning-subsection-cooler-necessity.trycloudflare.com", // ✅ Your tunnel URL
       protocol: "wss",
       clientPort: 443,
     },

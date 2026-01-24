@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { Video, Calendar, Clock, Users, Play, CheckCircle, Loader2 } from 'lucide-react';
@@ -6,20 +6,50 @@ import { Button } from '@/components/ui/button';
 import apiRequest from '@/utils/api';
 import EventRegistrationDialog from '@/components/EventRegistrationDialog';
 
-interface Event {
-  id: string;
-  name: string;
+interface UpcomingEvent {
+  id: string;           // changed to string to match your API
   degree: string;
+  name: string;
   date: string;
-  time?: string;          // only upcoming usually has time
+  time?: string;
   going?: number;
-  _id?: string;           // mongo id, optional
+  registered?: boolean; // we'll compute this from user data
+  isFree?: boolean;     // you'll need to add this field in backend or decide logic
+  price?: number;       // same as above
+  _id?: string;
 }
 
-interface UserEventData {
-  upcoming: string[];     // array of event ids user is registered for
-  pastEvents?: string[];  // optional - watched event ids
-  // if backend sends watched separately, adjust accordingly
+interface EventRegistrationDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  event: {
+    id: string;
+    degree: string;
+    name: string;
+    date: string;
+    time: string;
+    isFree?: boolean;
+    price?: number;
+  };
+  onSuccess: () => void;
+}
+
+interface PastEvent {
+  id: string;
+  degree: string;
+  name: string;
+  date: string;
+  watched?: boolean;    // we'll compute from user watched list
+  _id?: string;
+}
+
+interface UserEventsResponse {
+  success: boolean;
+  data: {
+    upcoming: string[];     // array of event IDs the user is registered for
+    pastEvents?: string[];  // watched event IDs (if your backend sends this)
+    // or separate watched field if structured differently
+  };
 }
 
 const ThursdayNight = () => {
@@ -27,48 +57,54 @@ const ThursdayNight = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [allUpcoming, setAllUpcoming] = useState<Event[]>([]);
-  const [allPast, setAllPast] = useState<Event[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
+  const [pastEvents, setPastEvents] = useState<PastEvent[]>([]);
 
-  const [registeredIds, setRegisteredIds] = useState<Set<string>>(new Set());
-  const [watchedIds, setWatchedIds] = useState<Set<string>>(new Set());
+  const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(new Set());
+  const [watchedEventIds, setWatchedEventIds] = useState<Set<string>>(new Set());
+
+  const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<UpcomingEvent | null>(null);
+
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+      setLoading(true);
+      setError(null);
 
-        // 1. Fetch general upcoming & past events
+      try {
+        // 1. Fetch all upcoming & past events (public list)
         const eventsRes = await apiRequest<{
           success: boolean;
           data: {
-            upComing: Event[];
-            pastEvents: Event[];
+            upComing: UpcomingEvent[];
+            pastEvents: PastEvent[];
           };
         }>('/api/members/retrieve/thursday-night/events/list', { method: 'GET' });
 
         if (eventsRes?.success && eventsRes.data) {
-          setAllUpcoming(eventsRes.data.upComing || []);
-          setAllPast(eventsRes.data.pastEvents || []);
+          setUpcomingEvents(eventsRes.data.upComing || []);
+          setPastEvents(eventsRes.data.pastEvents || []);
         }
 
-        // 2. Fetch user-specific registrations & watched
-        const userRes = await apiRequest<{
-          success: boolean;
-          data: UserEventData;
-        }>('/api/members/retrieve/thursday-night/events/data/list', { method: 'GET' });
+        // 2. Fetch user-specific registrations & watched status
+        const userRes = await apiRequest<UserEventsResponse>(
+          '/api/members/retrieve/thursday-night/user-events/data/list',
+          { method: 'GET' }
+        );
 
         if (userRes?.success && userRes.data) {
-          setRegisteredIds(new Set(userRes.data.upcoming || []));
-          // If backend sends watched/past watched events:
+          setRegisteredEventIds(new Set(userRes.data.upcoming || []));
+          
+          // If backend sends watched events in pastEvents or separate field:
           if (userRes.data.pastEvents) {
-            setWatchedIds(new Set(userRes.data.pastEvents));
+            setWatchedEventIds(new Set(userRes.data.pastEvents));
           }
-          // If watched comes in separate field, add: setWatchedIds(new Set(res.watched || []))
+          // Alternative: if watched is separate field, e.g. userRes.data.watched
+          // setWatchedEventIds(new Set(userRes.data.watched || []));
         }
       } catch (err) {
         console.error('Failed to load Thursday Night data:', err);
-        setError('Unable to load events. Please try again later.');
+        setError('Failed to load events. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -77,16 +113,16 @@ const ThursdayNight = () => {
     fetchData();
   }, []);
 
-  // Optional: function to handle registration (stub - implement POST later)
-  const handleRegister = async (eventId: string) => {
-    // TODO: POST to /api/register/thursday-night/{eventId}
-    // On success: add to registeredIds
-    alert(`Registering for event ${eventId}... (implement API call)`);
+  const handleRegisterClick = (event: UpcomingEvent) => {
+    if (registeredEventIds.has(event.id)) return; // already registered
+    setSelectedEvent(event);
+    setRegistrationDialogOpen(true);
   };
 
-  const handleWatch = (eventId: string, isWatched: boolean) => {
-    // TODO: link to video or mark as watched
-    alert(`${isWatched ? 'Rewatch' : 'Watch'} event ${eventId} (implement player)`);
+  const handleRegistrationSuccess = (eventId: string) => {
+    // Optimistic update
+    setRegisteredEventIds(prev => new Set([...prev, eventId]));
+    // You can also refetch user data here if needed
   };
 
   if (loading) {
@@ -107,10 +143,7 @@ const ThursdayNight = () => {
         <div className="flex-1 flex flex-col min-w-0">
           <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
           <main className="flex-1 p-6 flex items-center justify-center">
-            <div className="text-center max-w-md">
-              <p className="text-destructive text-lg mb-2">Error</p>
-              <p className="text-muted-foreground">{error}</p>
-            </div>
+            <p className="text-destructive text-center">{error}</p>
           </main>
         </div>
       </div>
@@ -125,7 +158,7 @@ const ThursdayNight = () => {
         <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
 
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
-          <div className="max-w-4xl mx-auto space-y-8">
+          <div className="max-w-4xl mx-auto">
             {/* Header */}
             <div className="mb-8">
               <h1 className="font-heading text-3xl font-bold text-foreground mb-2">
@@ -136,80 +169,79 @@ const ThursdayNight = () => {
               </p>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="border rounded-lg p-6 bg-card text-center">
-                <Users className="text-primary mx-auto mb-3" size={32} />
-                <p className="text-3xl font-bold">1,000+</p>
-                <p className="text-sm text-muted-foreground mt-1">Members Joined Since 2020</p>
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="progress-card text-center animate-fade-in">
+                <Users className="text-primary mx-auto mb-2" size={32} />
+                <p className="text-2xl font-heading font-bold text-foreground">1,000+</p>
+                <p className="text-sm text-muted-foreground">Members Joined Since 2020</p>
               </div>
-              <div className="border rounded-lg p-6 bg-card text-center">
-                <Video className="text-primary mx-auto mb-3" size={32} />
-                <p className="text-3xl font-bold">29</p>
-                <p className="text-sm text-muted-foreground mt-1">Degrees Available</p>
+              <div className="progress-card text-center animate-fade-in" style={{ animationDelay: '100ms' }}>
+                <Video className="text-primary mx-auto mb-2" size={32} />
+                <p className="text-2xl font-heading font-bold text-foreground">29</p>
+                <p className="text-sm text-muted-foreground">Degrees Available</p>
               </div>
-              <div className="border rounded-lg p-6 bg-card text-center">
-                <Calendar className="text-primary mx-auto mb-3" size={32} />
-                <p className="text-3xl font-bold">Bi-Weekly</p>
-                <p className="text-sm text-muted-foreground mt-1">Every Other Thursday</p>
+              <div className="progress-card text-center animate-fade-in" style={{ animationDelay: '200ms' }}>
+                <Calendar className="text-primary mx-auto mb-2" size={32} />
+                <p className="text-2xl font-heading font-bold text-foreground">Bi-Weekly</p>
+                <p className="text-sm text-muted-foreground">Every Other Thursday</p>
               </div>
             </div>
 
-            {/* Upcoming Presentations */}
-            <div className="border rounded-lg p-6 bg-card">
-              <h3 className="font-heading text-lg font-semibold mb-5 flex items-center gap-3">
+            {/* Upcoming Events */}
+            <div className="progress-card mb-6 animate-fade-in" style={{ animationDelay: '300ms' }}>
+              <h3 className="font-heading text-lg font-semibold mb-4 flex items-center gap-2">
                 <Calendar className="text-primary" size={20} />
                 Upcoming Presentations
               </h3>
 
-              {allUpcoming.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  No upcoming events scheduled at this time.
+              {upcomingEvents.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">
+                  No upcoming presentations scheduled.
                 </p>
               ) : (
                 <div className="space-y-4">
-                  {allUpcoming.map((event) => {
-                    const isRegistered = registeredIds.has(event.id);
+                  {upcomingEvents.map((event) => {
+                    const isRegistered = registeredEventIds.has(event.id);
                     return (
                       <div
                         key={event.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-muted/40 rounded-lg border"
+                        className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border"
                       >
-                        <div className="flex items-center gap-4 flex-1">
-                          <div className="w-14 h-14 rounded-lg bg-primary flex items-center justify-center shrink-0">
-                            <span className="font-heading font-bold text-primary-foreground text-xl">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-lg bg-primary flex items-center justify-center">
+                            <span className="font-heading font-bold text-primary-foreground text-lg">
                               {event.degree}
                             </span>
                           </div>
                           <div>
-                            <h4 className="font-semibold text-lg">{event.name}</h4>
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
-                              <span className="flex items-center gap-1.5">
+                            <h4 className="font-heading font-semibold text-foreground">
+                              {event.name}
+                            </h4>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                              <span className="flex items-center gap-1">
                                 <Calendar size={14} />
                                 {event.date}
                               </span>
                               {event.time && (
-                                <span className="flex items-center gap-1.5">
+                                <span className="flex items-center gap-1">
                                   <Clock size={14} />
                                   {event.time}
                                 </span>
-                              )}
-                              {event.going !== undefined && (
-                                <span>{event.going} going</span>
                               )}
                             </div>
                           </div>
                         </div>
 
                         {isRegistered ? (
-                          <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium whitespace-nowrap">
-                            <CheckCircle size={16} />
+                          <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium flex items-center gap-1">
+                            <CheckCircle size={14} />
                             Registered
                           </span>
                         ) : (
                           <Button
                             size="sm"
-                            onClick={() => handleRegister(event.id)}
+                            onClick={() => handleRegisterClick(event)}
                           >
                             Register
                           </Button>
@@ -221,44 +253,39 @@ const ThursdayNight = () => {
               )}
             </div>
 
-            {/* Past Presentations */}
-            <div className="border rounded-lg p-6 bg-card">
-              <h3 className="font-heading text-lg font-semibold mb-5 flex items-center gap-3">
+            {/* Past Events */}
+            <div className="progress-card animate-fade-in" style={{ animationDelay: '400ms' }}>
+              <h3 className="font-heading text-lg font-semibold mb-4 flex items-center gap-2">
                 <Video className="text-primary" size={20} />
                 Past Presentations
               </h3>
 
-              {allPast.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  No past events available yet.
+              {pastEvents.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">
+                  No past presentations available yet.
                 </p>
               ) : (
-                <div className="space-y-4">
-                  {allPast.map((event) => {
-                    const isWatched = watchedIds.has(event.id);
+                <div className="space-y-3">
+                  {pastEvents.map((event) => {
+                    const isWatched = watchedEventIds.has(event.id);
                     return (
                       <div
                         key={event.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-muted/30 rounded-lg"
+                        className="flex items-center justify-between p-4 bg-muted/30 rounded-lg"
                       >
-                        <div className="flex items-center gap-4 flex-1">
-                          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                            <span className="font-heading font-semibold text-foreground text-lg">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
+                            <span className="font-heading font-semibold text-foreground">
                               {event.degree}
                             </span>
                           </div>
                           <div>
-                            <h4 className="font-medium text-lg">{event.name}</h4>
-                            <p className="text-sm text-muted-foreground mt-1">{event.date}</p>
+                            <h4 className="font-medium text-foreground">{event.name}</h4>
+                            <p className="text-sm text-muted-foreground">{event.date}</p>
                           </div>
                         </div>
-
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleWatch(event.id, isWatched)}
-                        >
-                          <Play size={14} className="mr-2" />
+                        <Button variant="outline" size="sm">
+                          <Play size={14} className="mr-1" />
                           {isWatched ? 'Rewatch' : 'Watch'}
                         </Button>
                       </div>
@@ -267,15 +294,37 @@ const ThursdayNight = () => {
                 </div>
               )}
 
-              <Button variant="outline" className="w-full mt-6">
+              <Button variant="outline" className="w-full mt-4">
                 View All Past Presentations
               </Button>
             </div>
           </div>
         </main>
       </div>
+
+      {/* Registration Dialog */}
+      {selectedEvent && (
+        <EventRegistrationDialog
+          isOpen={registrationDialogOpen}
+          onClose={() => {
+            setRegistrationDialogOpen(false);
+            setSelectedEvent(null);
+            handleRegistrationSuccess(null);
+          }}
+          event={{
+            id: Number(selectedEvent.id),
+            degree: selectedEvent.degree,
+            name: selectedEvent.name,
+            date: selectedEvent.date,
+            time: selectedEvent.time || '',
+            isFree: selectedEvent.isFree,
+            price: selectedEvent.price,
+          }}
+        />
+      )}
     </div>
   );
 };
 
 export default ThursdayNight;
+
