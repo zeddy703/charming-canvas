@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, CreditCard, CheckCircle } from 'lucide-react';
+import { Loader2, CreditCard, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface EventRegistrationDialogProps {
@@ -67,6 +67,26 @@ interface FieldErrors {
   valley?: string;
 }
 
+interface RegistrationResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    registrationId: string;
+    requiresPayment: boolean;
+    amount?: number;
+    currency?: string;
+  };
+}
+
+interface PaymentResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    transactionId: string;
+    status: string;
+  };
+}
+
 const valleys = [
   'Valley of Nairobi',
   'Valley of Mombasa',
@@ -100,10 +120,12 @@ const paymentMethods = [
   },
 ];
 
+type DialogStep = 'form' | 'submitting' | 'payment' | 'processing-payment' | 'success' | 'error';
+
 const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDialogProps) => {
   const { toast } = useToast();
-  const [step, setStep] = useState<'form' | 'payment' | 'processing' | 'success'>('form');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [step, setStep] = useState<DialogStep>('form');
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Form state
   const [fullName, setFullName] = useState('');
@@ -115,6 +137,9 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [agreeCode, setAgreeCode] = useState(false);
+
+  // Registration response data
+  const [registrationId, setRegistrationId] = useState<string | null>(null);
 
   // Payment
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
@@ -204,14 +229,55 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
     return true;
   };
 
-  const handleProceed = () => {
+  // Step 1: Submit form data to backend
+  const handleFormSubmit = async () => {
     if (!validateForm()) return;
     if (!validateAgreements()) return;
 
-    if (isFreeEvent) {
-      handleSubmit();
-    } else {
-      setStep('payment');
+    setStep('submitting');
+    setErrorMessage('');
+
+    try {
+      const payload = {
+        eventId: event.id,
+        fullName: sanitizeInput(fullName),
+        email: sanitizeInput(email),
+        memberNumber: sanitizeInput(memberNumber),
+        valley,
+        isFree: isFreeEvent,
+        price: isFreeEvent ? 0 : eventPrice,
+      };
+
+      const response = await apiRequest<RegistrationResponse>(
+        '/api/events/register',
+        {
+          method: 'POST',
+          body: payload,
+        }
+      );
+
+      if (response.success) {
+        setRegistrationId(response.data?.registrationId || null);
+        
+        if (response.data?.requiresPayment) {
+          // Payment is required, show payment step
+          setStep('payment');
+        } else {
+          // Free event or no payment required, show success
+          setStep('success');
+          toast({
+            title: 'Registration Successful',
+            description: `You have been registered for ${event.name}`,
+          });
+        }
+      } else {
+        setErrorMessage(response.message || 'Registration failed. Please try again.');
+        setStep('error');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setErrorMessage('An error occurred during registration. Please try again.');
+      setStep('error');
     }
   };
 
@@ -239,8 +305,9 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
     return true;
   };
 
-  const handleSubmit = async () => {
-    if (!isFreeEvent && !selectedPaymentMethod) {
+  // Step 2: Submit payment to backend
+  const handlePaymentSubmit = async () => {
+    if (!selectedPaymentMethod) {
       toast({
         title: 'Payment Required',
         description: 'Please select a payment method',
@@ -253,29 +320,59 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
       return;
     }
 
-    setStep('processing');
-    setIsSubmitting(true);
+    setStep('processing-payment');
+    setErrorMessage('');
 
     try {
+<<<<<<< HEAD
       // Simulate API call
       
       await new Promise((resolve) => setTimeout(resolve, 2000));
+=======
+      const paymentPayload = {
+        registrationId,
+        eventId: event.id,
+        paymentMethod: selectedPaymentMethod,
+        amount: displayAmount,
+        currency: isMobilePayment ? 'KES' : 'USD',
+        ...(isMobilePayment && { phoneNumber: mobilePhoneNumber.replace(/\s/g, '') }),
+      };
+>>>>>>> 4731ee03bcfe1700d0ac8a46e0f029506b6cf305
 
-      setStep('success');
-      toast({
-        title: 'Registration Successful',
-        description: `You have been registered for ${event.name}`,
-      });
+      const response = await apiRequest<PaymentResponse>(
+        '/api/events/payment',
+        {
+          method: 'POST',
+          body: paymentPayload,
+        }
+      );
+
+      if (response.success) {
+        setStep('success');
+        toast({
+          title: 'Payment Successful',
+          description: `Your registration for ${event.name} is complete`,
+        });
+      } else {
+        setErrorMessage(response.message || 'Payment failed. Please try again.');
+        setStep('error');
+      }
     } catch (error) {
-      toast({
-        title: 'Registration Failed',
-        description: 'Please try again later',
-        variant: 'destructive',
-      });
-      setStep('form');
-    } finally {
-      setIsSubmitting(false);
+      console.error('Payment error:', error);
+      setErrorMessage('An error occurred during payment. Please try again.');
+      setStep('error');
     }
+  };
+
+  const handleRetry = () => {
+    if (registrationId) {
+      // If we have a registration ID, go back to payment
+      setStep('payment');
+    } else {
+      // Otherwise, go back to form
+      setStep('form');
+    }
+    setErrorMessage('');
   };
 
   const handleClose = () => {
@@ -287,28 +384,51 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
     setValley('');
     setAgreeTerms(false);
     setAgreePrivacy(false);
+    setAgreeCode(false);
     setMobilePhoneNumber('');
     setPhoneError('');
-    setAgreeCode(false);
     setSelectedPaymentMethod(null);
     setFieldErrors({});
     setAgreementError('');
+    setRegistrationId(null);
+    setErrorMessage('');
     onClose();
+  };
+
+  const getDialogTitle = () => {
+    switch (step) {
+      case 'success':
+        return 'Registration Complete';
+      case 'error':
+        return 'Registration Failed';
+      default:
+        return `Register for ${event.degree} - ${event.name}`;
+    }
+  };
+
+  const getDialogDescription = () => {
+    switch (step) {
+      case 'form':
+        return 'Fill in your details to register for this presentation';
+      case 'submitting':
+        return 'Submitting your registration...';
+      case 'payment':
+        return 'Select your preferred payment method';
+      case 'processing-payment':
+        return 'Processing your payment...';
+      case 'success':
+        return "You're all set!";
+      case 'error':
+        return 'Something went wrong';
+    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading">
-            {step === 'success' ? 'Registration Complete' : `Register for ${event.degree} - ${event.name}`}
-          </DialogTitle>
-          <DialogDescription>
-            {step === 'form' && 'Fill in your details to register for this presentation'}
-            {step === 'payment' && 'Select your preferred payment method'}
-            {step === 'processing' && 'Processing your registration...'}
-            {step === 'success' && 'You\'re all set!'}
-          </DialogDescription>
+          <DialogTitle className="font-heading">{getDialogTitle()}</DialogTitle>
+          <DialogDescription>{getDialogDescription()}</DialogDescription>
         </DialogHeader>
 
         {step === 'form' && (
@@ -445,9 +565,17 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
               )}
             </div>
 
-            <Button onClick={handleProceed} className="w-full">
+            <Button onClick={handleFormSubmit} className="w-full">
               {isFreeEvent ? 'Complete Registration' : 'Continue to Payment'}
             </Button>
+          </div>
+        )}
+
+        {step === 'submitting' && (
+          <div className="py-8 text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-foreground font-medium">Submitting your registration...</p>
+            <p className="text-sm text-muted-foreground mt-1">Please do not close this window</p>
           </div>
         )}
 
@@ -534,7 +662,7 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
                 Back
               </Button>
               <Button
-                onClick={handleSubmit}
+                onClick={handlePaymentSubmit}
                 disabled={!selectedPaymentMethod || ((selectedPaymentMethod === 'mpesa' || selectedPaymentMethod === 'airtel') && !mobilePhoneNumber)}
                 className="flex-1"
               >
@@ -544,10 +672,10 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
           </div>
         )}
 
-        {step === 'processing' && (
+        {step === 'processing-payment' && (
           <div className="py-8 text-center">
             <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-foreground font-medium">Processing your registration...</p>
+            <p className="text-foreground font-medium">Processing your payment...</p>
             <p className="text-sm text-muted-foreground mt-1">Please do not close this window</p>
           </div>
         )}
@@ -564,6 +692,26 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
             <Button onClick={handleClose} className="mt-6">
               Close
             </Button>
+          </div>
+        )}
+
+        {step === 'error' && (
+          <div className="py-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+              <XCircle className="h-10 w-10 text-red-600" />
+            </div>
+            <p className="text-foreground font-medium text-lg">Registration Failed</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {errorMessage}
+            </p>
+            <div className="flex gap-3 mt-6 justify-center">
+              <Button variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button onClick={handleRetry}>
+                Try Again
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>
