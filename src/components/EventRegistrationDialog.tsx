@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { z } from 'zod';
 import apiRequest from '@/utils/api';
 import { ApiError } from '@/utils/api';
@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, CreditCard, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, CreditCard, CheckCircle, XCircle, AlertTriangle, Smartphone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface EventRegistrationDialogProps {
@@ -59,7 +59,16 @@ const registrationSchema = z.object({
   valley: z.string().min(1, 'Please select a valley'),
 });
 
+// PayPal form validation schema
+const paypalFormSchema = z.object({
+  firstName: z.string().trim().min(1, 'First name is required').max(50),
+  lastName: z.string().trim().min(1, 'Last name is required').max(50),
+  email: z.string().trim().email('Please enter a valid email').max(255),
+  phone: z.string().trim().optional(),
+});
+
 type FormData = z.infer<typeof registrationSchema>;
+type PaypalFormData = z.infer<typeof paypalFormSchema>;
 
 interface FieldErrors {
   fullName?: string;
@@ -68,13 +77,20 @@ interface FieldErrors {
   valley?: string;
 }
 
+interface PaypalFieldErrors {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+}
+
 interface RegistrationResponse {
   success: boolean;
   message?: string;
   error?: string;
   status?: string;
   rate?: number;
-  currency?: string
+  currency?: string;
   data?: {
     registrationId: string;
     requiresPayment: boolean;
@@ -82,7 +98,6 @@ interface RegistrationResponse {
     currency?: string;
     status?: string;
     rate?: number;
-
   };
 }
 
@@ -90,10 +105,26 @@ interface PaymentResponse {
   success: boolean;
   message?: string;
   error?: string;
+  url?: string;
+  checkoutId?: string;
   data?: {
     transactionId: string;
     status: string;
+    checkoutId?: string;
   };
+}
+
+interface TransactionStatusResponse {
+  success: boolean;
+  status?: 'pending' | 'completed' | 'failed';
+  message?: string;
+}
+
+interface UserProfile {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
 }
 
 const valleys = [
@@ -129,7 +160,17 @@ const paymentMethods = [
   },
 ];
 
-type DialogStep = 'form' | 'submitting' | 'payment' | 'processing-payment' | 'success' | 'error';
+type DialogStep = 
+  | 'form' 
+  | 'submitting' 
+  | 'payment' 
+  | 'processing-payment' 
+  | 'awaiting-mobile-confirmation'
+  | 'paypal-loading-profile'
+  | 'paypal-confirm-info'
+  | 'paypal-processing'
+  | 'success' 
+  | 'error';
 
 const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDialogProps) => {
   const { toast } = useToast();
@@ -156,6 +197,17 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
   const [phoneError, setPhoneError] = useState('');
   const [exchangeRate, setExchangeRate] = useState<number>(1);
   const [loadingRate, setLoadingRate] = useState(false);
+
+  // Mobile payment confirmation
+  const [checkoutId, setCheckoutId] = useState<string | null>(null);
+  const isMountedRef = useRef<boolean>(true);
+
+  // PayPal user info
+  const [paypalFirstName, setPaypalFirstName] = useState('');
+  const [paypalLastName, setPaypalLastName] = useState('');
+  const [paypalEmail, setPaypalEmail] = useState('');
+  const [paypalPhone, setPaypalPhone] = useState('');
+  const [paypalFieldErrors, setPaypalFieldErrors] = useState<PaypalFieldErrors>({});
 
   // Errors
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -332,6 +384,12 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
       return;
     }
 
+    // For PayPal, go to user info flow
+    if (selectedPaymentMethod === 'paypal') {
+      await fetchPaypalUserProfile();
+      return;
+    }
+
     if (!validatePhoneNumber()) {
       return;
     }
@@ -340,8 +398,6 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
     setErrorMessage('');
 
     try {
-
-      //await new Promise((resolve) => setTimeout(resolve, 2000));
       const paymentPayload = {
         registrationId,
         eventId: event.id,
@@ -350,27 +406,167 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
         currency: isMobilePayment ? 'KES' : 'USD',
         ...(isMobilePayment && { phone: mobilePhoneNumber.replace(/\s/g, '') }),
       };
+
       const response = await apiRequest<PaymentResponse>(
         '/api/initiate/payment/services',
         {
           method: 'POST',
           body: paymentPayload,
+          showErrorToast: false,
         }
       );
 
       if (response.success) {
-        setStep('success');
-        toast({
-          title: 'Payment Successful',
-          description: `Your registration for ${event.name} is complete`,
-        });
+        // For mobile payments, show awaiting confirmation and poll for status
+        if (isMobilePayment && (response.checkoutId || response.data?.checkoutId)) {
+          const checkoutIdValue = response.checkoutId || response.data?.checkoutId;
+          setCheckoutId(checkoutIdValue!);
+          setStep('awaiting-mobile-confirmation');
+          pollTransactionStatus(checkoutIdValue!);
+        } else {
+          setStep('success');
+          toast({
+            title: 'Payment Successful',
+            description: `Your registration for ${event.name} is complete`,
+          });
+        }
       } else {
         setErrorMessage(response.message || 'Payment failed. Please try again.');
         setStep('error');
       }
     } catch (error) {
       console.error('Payment error:', error);
-      setErrorMessage('An error occurred during payment. Please try again.');
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage('An error occurred during payment. Please try again.');
+      }
+      setStep('error');
+    }
+  };
+
+  // Poll transaction status for mobile payments
+  const pollTransactionStatus = async (checkoutIdValue: string) => {
+    isMountedRef.current = true;
+
+    try {
+      const res = await apiRequest<TransactionStatusResponse>(
+        `/api/initiate/payments/transaction/status/${checkoutIdValue}`,
+        { method: 'GET', showErrorToast: false }
+      );
+
+      if (!isMountedRef.current) return;
+
+      if (res.success && res.status === 'completed') {
+        setStep('success');
+        toast({
+          title: 'Payment Successful',
+          description: res.message || `Your registration for ${event.name} is complete`,
+        });
+      } else if (res.status === 'failed' || !res.success) {
+        setErrorMessage(res.message || 'Payment failed. Please try again.');
+        setStep('error');
+      }
+      // If pending, the user is still on awaiting-mobile-confirmation screen
+    } catch (error) {
+      console.error('Transaction status check failed:', error);
+      if (isMountedRef.current) {
+        setErrorMessage('Failed to verify payment status. Please try again.');
+        setStep('error');
+      }
+    }
+  };
+
+  // Fetch PayPal user profile
+  const fetchPaypalUserProfile = async () => {
+    setStep('paypal-loading-profile');
+    setErrorMessage('');
+    setPaypalFieldErrors({});
+
+    try {
+      const res = await apiRequest<{ success: boolean; user: UserProfile }>(
+        '/api/user/account/profile/info',
+        { method: 'GET', showErrorToast: false }
+      );
+
+      if (res?.success && res?.user) {
+        setPaypalFirstName(res.user.firstName || '');
+        setPaypalLastName(res.user.lastName || '');
+        setPaypalEmail(res.user.email || '');
+        setPaypalPhone(res.user.phone || '');
+      }
+
+      setStep('paypal-confirm-info');
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Failed to load your profile. Please try again.');
+      setStep('error');
+    }
+  };
+
+  // Validate PayPal form
+  const validatePaypalForm = (): PaypalFormData | null => {
+    setPaypalFieldErrors({});
+    setErrorMessage('');
+
+    const result = paypalFormSchema.safeParse({
+      firstName: paypalFirstName,
+      lastName: paypalLastName,
+      email: paypalEmail,
+      phone: paypalPhone || undefined,
+    });
+
+    if (!result.success) {
+      const errors: PaypalFieldErrors = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as keyof PaypalFieldErrors;
+        if (!errors[field]) {
+          errors[field] = err.message;
+        }
+      });
+      setPaypalFieldErrors(errors);
+      return null;
+    }
+
+    return result.data;
+  };
+
+  // Submit PayPal payment
+  const handlePaypalSubmit = async () => {
+    const validatedData = validatePaypalForm();
+    if (!validatedData) return;
+
+    setStep('paypal-processing');
+    setErrorMessage('');
+
+    try {
+      const payload = {
+        registrationId,
+        eventId: event.id,
+        methodId: 'paypal',
+        amount: eventPrice,
+        currency: 'USD',
+        firstName: validatedData.firstName.trim(),
+        lastName: validatedData.lastName.trim(),
+        email: validatedData.email.trim(),
+        phone: validatedData.phone?.trim() || undefined,
+      };
+
+      const res = await apiRequest<PaymentResponse>(
+        '/api/initiate/payment/services',
+        {
+          method: 'POST',
+          body: payload,
+          showErrorToast: false,
+        }
+      );
+
+      if (res?.success && res?.url) {
+        window.location.href = res.url;
+      } else {
+        throw new Error(res?.message || 'Failed to initiate PayPal payment.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Failed to process payment. Please try again.');
       setStep('error');
     }
   };
@@ -387,6 +583,7 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
   };
 
   const handleClose = () => {
+    isMountedRef.current = false;
     // Reset form state
     setStep('form');
     setFullName('');
@@ -403,6 +600,13 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
     setAgreementError('');
     setRegistrationId(null);
     setErrorMessage('');
+    setCheckoutId(null);
+    // Reset PayPal fields
+    setPaypalFirstName('');
+    setPaypalLastName('');
+    setPaypalEmail('');
+    setPaypalPhone('');
+    setPaypalFieldErrors({});
     onClose();
   };
 
@@ -427,6 +631,14 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
         return 'Select your preferred payment method';
       case 'processing-payment':
         return 'Processing your payment...';
+      case 'awaiting-mobile-confirmation':
+        return 'Waiting for payment confirmation';
+      case 'paypal-loading-profile':
+        return 'Loading your information...';
+      case 'paypal-confirm-info':
+        return 'Confirm your details for PayPal';
+      case 'paypal-processing':
+        return 'Redirecting to PayPal...';
       case 'success':
         return "You're all set!";
       case 'error':
@@ -688,6 +900,140 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
             <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
             <p className="text-foreground font-medium">Processing your payment...</p>
             <p className="text-sm text-muted-foreground mt-1">Please do not close this window</p>
+          </div>
+        )}
+
+        {step === 'awaiting-mobile-confirmation' && (
+          <div className="py-8 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <Smartphone className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+              <p className="text-foreground font-medium text-lg">Check Your Phone</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                A payment prompt has been sent to your {selectedPaymentMethod === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} phone
+              </p>
+            </div>
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+            <div className="flex items-start gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800 text-left">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                Please do not close or refresh this page until the payment is confirmed
+              </p>
+            </div>
+          </div>
+        )}
+
+        {step === 'paypal-loading-profile' && (
+          <div className="py-8 text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-foreground font-medium">Loading your information...</p>
+            <p className="text-sm text-muted-foreground mt-1">Please wait</p>
+          </div>
+        )}
+
+        {step === 'paypal-confirm-info' && (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              This information will be used to process your PayPal payment of{' '}
+              <span className="font-semibold text-foreground">${eventPrice.toFixed(2)}</span>
+            </p>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="paypalFirstName">
+                  First Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="paypalFirstName"
+                  value={paypalFirstName}
+                  onChange={(e) => {
+                    setPaypalFirstName(e.target.value);
+                    if (paypalFieldErrors.firstName) setPaypalFieldErrors(prev => ({ ...prev, firstName: undefined }));
+                  }}
+                  placeholder="First name"
+                  className={paypalFieldErrors.firstName ? 'border-destructive' : ''}
+                />
+                {paypalFieldErrors.firstName && (
+                  <p className="text-xs text-destructive">{paypalFieldErrors.firstName}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="paypalLastName">
+                  Last Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="paypalLastName"
+                  value={paypalLastName}
+                  onChange={(e) => {
+                    setPaypalLastName(e.target.value);
+                    if (paypalFieldErrors.lastName) setPaypalFieldErrors(prev => ({ ...prev, lastName: undefined }));
+                  }}
+                  placeholder="Last name"
+                  className={paypalFieldErrors.lastName ? 'border-destructive' : ''}
+                />
+                {paypalFieldErrors.lastName && (
+                  <p className="text-xs text-destructive">{paypalFieldErrors.lastName}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="paypalEmail">
+                Email <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="paypalEmail"
+                type="email"
+                value={paypalEmail}
+                onChange={(e) => {
+                  setPaypalEmail(e.target.value);
+                  if (paypalFieldErrors.email) setPaypalFieldErrors(prev => ({ ...prev, email: undefined }));
+                }}
+                placeholder="Email address"
+                className={paypalFieldErrors.email ? 'border-destructive' : ''}
+              />
+              {paypalFieldErrors.email && (
+                <p className="text-xs text-destructive">{paypalFieldErrors.email}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="paypalPhone">Phone Number</Label>
+              <Input
+                id="paypalPhone"
+                type="tel"
+                value={paypalPhone}
+                onChange={(e) => {
+                  setPaypalPhone(e.target.value);
+                  if (paypalFieldErrors.phone) setPaypalFieldErrors(prev => ({ ...prev, phone: undefined }));
+                }}
+                placeholder="Phone number (optional)"
+                className={paypalFieldErrors.phone ? 'border-destructive' : ''}
+              />
+              {paypalFieldErrors.phone && (
+                <p className="text-xs text-destructive">{paypalFieldErrors.phone}</p>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setStep('payment')} className="flex-1">
+                Back
+              </Button>
+              <Button onClick={handlePaypalSubmit} className="flex-1">
+                Proceed to PayPal
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 'paypal-processing' && (
+          <div className="py-8 text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-foreground font-medium">Redirecting to PayPal</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              You will be redirected to PayPal to complete your payment...
+            </p>
           </div>
         )}
 
