@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
-import { Video, Calendar, Clock, Users, Play, CheckCircle, Loader2 } from 'lucide-react';
+import { Video, Calendar, Clock, Users, Play, CheckCircle } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import apiRequest from '@/utils/api';
 import EventRegistrationDialog from '@/components/EventRegistrationDialog';
@@ -127,10 +128,75 @@ const ThursdayNight = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading Thursday Night at the Rite...</p>
+      <div className="min-h-screen bg-background flex">
+        <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+        <div className="flex-1 flex flex-col min-w-0">
+          <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+          <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
+            <div className="max-w-4xl mx-auto">
+              {/* Header Skeleton */}
+              <div className="mb-8">
+                <Skeleton className="h-9 w-72 mb-2" />
+                <Skeleton className="h-5 w-96" />
+              </div>
+
+              {/* Stats Skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="progress-card text-center">
+                    <Skeleton className="h-8 w-8 mx-auto mb-2 rounded" />
+                    <Skeleton className="h-7 w-20 mx-auto mb-1" />
+                    <Skeleton className="h-4 w-32 mx-auto" />
+                  </div>
+                ))}
+              </div>
+
+              {/* Upcoming Events Skeleton */}
+              <div className="progress-card mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Skeleton className="h-5 w-5 rounded" />
+                  <Skeleton className="h-6 w-48" />
+                </div>
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border">
+                      <div className="flex items-center gap-4">
+                        <Skeleton className="w-14 h-14 rounded-lg" />
+                        <div>
+                          <Skeleton className="h-5 w-40 mb-2" />
+                          <Skeleton className="h-4 w-32" />
+                        </div>
+                      </div>
+                      <Skeleton className="h-9 w-20 rounded-md" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Past Events Skeleton */}
+              <div className="progress-card">
+                <div className="flex items-center gap-2 mb-4">
+                  <Skeleton className="h-5 w-5 rounded" />
+                  <Skeleton className="h-6 w-40" />
+                </div>
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-4">
+                        <Skeleton className="w-12 h-12 rounded-lg" />
+                        <div>
+                          <Skeleton className="h-5 w-36 mb-1" />
+                          <Skeleton className="h-4 w-24" />
+                        </div>
+                      </div>
+                      <Skeleton className="h-9 w-20 rounded-md" />
+                    </div>
+                  ))}
+                </div>
+                <Skeleton className="h-10 w-full mt-4 rounded-md" />
+              </div>
+            </div>
+          </main>
         </div>
       </div>
     );
