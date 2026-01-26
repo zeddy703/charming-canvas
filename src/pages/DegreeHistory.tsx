@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Award, Calendar, CheckCircle, Loader2, Video } from 'lucide-react';
+import { Award, Calendar, CheckCircle, Video } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import apiRequest from '@/utils/api';
@@ -55,10 +56,52 @@ const DegreeHistory = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading your degree history...</p>
+      <div className="min-h-screen bg-background flex">
+        <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+        <div className="flex-1 flex flex-col min-w-0">
+          <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+          <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
+            <div className="max-w-4xl mx-auto space-y-8">
+              {/* Header Skeleton */}
+              <div className="mb-8">
+                <Skeleton className="h-9 w-64 mb-2" />
+                <Skeleton className="h-5 w-80" />
+              </div>
+
+              {/* Progress Summary Skeleton */}
+              <div className="border rounded-lg p-6 bg-card">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-6 w-6 rounded" />
+                    <div>
+                      <Skeleton className="h-5 w-40 mb-1" />
+                      <Skeleton className="h-4 w-52" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-10 w-20" />
+                </div>
+                <Skeleton className="h-3 w-full rounded-full" />
+              </div>
+
+              {/* TNR Info Skeleton */}
+              <Skeleton className="h-20 w-full rounded-lg" />
+
+              {/* Degree List Skeleton */}
+              <div className="space-y-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="border rounded-lg p-5 bg-card">
+                    <div className="flex items-center gap-5">
+                      <Skeleton className="w-14 h-14 rounded-full shrink-0" />
+                      <div className="flex-1">
+                        <Skeleton className="h-6 w-48 mb-2" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </main>
         </div>
       </div>
     );

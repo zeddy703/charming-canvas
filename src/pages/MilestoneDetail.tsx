@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import ActivityOverlay from "@/components/ActivityOverlay";
 import apiRequest from "@/utils/api";
 const colorClasses = {
@@ -77,8 +78,34 @@ const MilestoneDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Loading progress…</p>
+      <div className="min-h-screen bg-background">
+        {/* Header Skeleton */}
+        <div className="bg-muted py-6 px-4">
+          <div className="max-w-4xl mx-auto">
+            <Skeleton className="h-6 w-40 mb-4" />
+            <Skeleton className="h-10 w-72 mb-2" />
+            <Skeleton className="h-5 w-48 mt-2" />
+            <Skeleton className="h-2 w-full mt-4 rounded-full" />
+          </div>
+        </div>
+
+        {/* Activities List Skeleton */}
+        <div className="max-w-4xl mx-auto p-4 md:p-8">
+          <Skeleton className="h-5 w-64 mx-auto mb-6" />
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-card border rounded-lg p-4 shadow-sm">
+                <div className="flex items-start gap-4">
+                  <Skeleton className="h-5 w-5 mt-1 rounded" />
+                  <div className="flex-1">
+                    <Skeleton className="h-6 w-48 mb-2" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
