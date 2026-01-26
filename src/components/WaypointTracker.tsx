@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Compass, Loader2 } from 'lucide-react';
+import { Compass } from 'lucide-react';
 import WaypointCard from './WaypointCard';
+import { Skeleton } from '@/components/ui/skeleton';
 import apiRequest from '@/utils/api';
 
 // Static list of waypoints (order MUST match API response array)
@@ -55,11 +56,21 @@ const WaypointTracker = () => {
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {WAYPOINTS.map((_, index) => (
+          {WAYPOINTS.map((waypoint, index) => (
             <div
               key={index}
-              className="h-56 bg-card/50 border border-border rounded-2xl animate-pulse"
-            />
+              className="progress-card"
+            >
+              {/* Header Skeleton */}
+              <Skeleton className={`h-8 w-full rounded-lg mb-4`} />
+              
+              {/* Stats Skeleton */}
+              <div className="text-center space-y-2">
+                <Skeleton className="h-10 w-16 mx-auto" />
+                <Skeleton className="h-4 w-20 mx-auto" />
+                <Skeleton className="h-3 w-24 mx-auto" />
+              </div>
+            </div>
           ))}
         </div>
       ) : (
