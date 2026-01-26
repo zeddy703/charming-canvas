@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
 
     hmr: {
-      host: "cleaning-subsection-cooler-necessity.trycloudflare.com", // ✅ Your tunnel URL
+      host: "corners-singing-pot-dairy.trycloudflare.com", // ✅ Your tunnel URL
       protocol: "wss",
       clientPort: 443,
     },

@@ -77,7 +77,7 @@ async function apiRequest<T = any>(
 
   const contentType = response.headers.get('content-type');
   const isJson = contentType && contentType.includes('application/json');
-  console.log('data response -', data)
+
 
   try {
     data = isJson ? await response.json() : await response.text();
@@ -86,27 +86,30 @@ async function apiRequest<T = any>(
   }
 
   if (!response.ok) {
-    if (response.status === 401) {
-      triggerSessionExpired();
-      throw new ApiError('Session expired', 401, data);
-    }
-
-    const message =
-      data?.message ||
-      data?.error || `An unexpected error occurred. Please try again.`;
-
-    if (showErrorToast) {
-      const { toast } = await import('@/components/ui/use-toast');
-      toast({
-        title: 'Request Failed',
-        description: message,
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    throw new ApiError(message, response.status, data);
+  if (response.status === 401) {
+    triggerSessionExpired();
+    throw new ApiError('Session expired', 401, data);
   }
+
+  const message =
+    data?.message ||
+    data?.error ||
+    'An unexpected error occurred. Please try again.';
+
+  if (showErrorToast) {
+    const { toast } = await import('@/components/ui/use-toast');
+    toast({
+      title: 'Request Failed',
+      description: message,
+      variant: 'destructive',
+    });
+  }
+   
+//  throw new ApiError(message, response.status, data);
+return data ?? {};
+  
+}
+
 
   // Success: return parsed data or empty object
   return (data ?? {}) as T;

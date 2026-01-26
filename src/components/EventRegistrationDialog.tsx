@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { z } from 'zod';
 import apiRequest from '@/utils/api';
+import { ApiError } from '@/utils/api';
 import {
   Dialog,
   DialogContent,
@@ -26,7 +27,7 @@ interface EventRegistrationDialogProps {
   isOpen: boolean;
   onClose: () => void;
   event: {
-    id: number;
+    id: string;
     degree: string;
     name: string;
     date: string;
@@ -70,17 +71,25 @@ interface FieldErrors {
 interface RegistrationResponse {
   success: boolean;
   message?: string;
+  error?: string;
+  status?: string;
+  rate?: number;
+  currency?: string
   data?: {
     registrationId: string;
     requiresPayment: boolean;
     amount?: number;
     currency?: string;
+    status?: string;
+    rate?: number;
+
   };
 }
 
 interface PaymentResponse {
   success: boolean;
   message?: string;
+  error?: string;
   data?: {
     transactionId: string;
     status: string;
@@ -249,21 +258,20 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
       };
 
       const response = await apiRequest<RegistrationResponse>(
-        '/api/events/register',
+        `/api/events/thursday-night/register`,
         {
           method: 'POST',
           body: payload,
         }
       );
-
-      if (response.success) {
+      setExchangeRate(response?.data?.rate || response?.rate || 130);
+      if (response?.success) {
         setRegistrationId(response.data?.registrationId || null);
         
+        
         if (response.data?.requiresPayment) {
-          // Payment is required, show payment step
           setStep('payment');
         } else {
-          // Free event or no payment required, show success
           setStep('success');
           toast({
             title: 'Registration Successful',
@@ -271,12 +279,20 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
           });
         }
       } else {
-        setErrorMessage(response.message || 'Registration failed. Please try again.');
+        if(response?.status === "pending") {
+          return setStep('payment');
+        }
+        setErrorMessage(response?.error || 'Registration failed. Please try again.');
         setStep('error');
       }
     } catch (error) {
       console.error('Registration error:', error);
-      setErrorMessage('An error occurred during registration. Please try again.');
+      if (error instanceof ApiError) {
+        console.log("Api error", error)
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage('An error occurred during registration. Please try again.');
+      }
       setStep('error');
     }
   };
@@ -324,23 +340,18 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
     setErrorMessage('');
 
     try {
-<<<<<<< HEAD
-      // Simulate API call
-      
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-=======
+
+      //await new Promise((resolve) => setTimeout(resolve, 2000));
       const paymentPayload = {
         registrationId,
         eventId: event.id,
-        paymentMethod: selectedPaymentMethod,
+        methodId: selectedPaymentMethod,
         amount: displayAmount,
         currency: isMobilePayment ? 'KES' : 'USD',
-        ...(isMobilePayment && { phoneNumber: mobilePhoneNumber.replace(/\s/g, '') }),
+        ...(isMobilePayment && { phone: mobilePhoneNumber.replace(/\s/g, '') }),
       };
->>>>>>> 4731ee03bcfe1700d0ac8a46e0f029506b6cf305
-
       const response = await apiRequest<PaymentResponse>(
-        '/api/events/payment',
+        '/api/initiate/payment/services',
         {
           method: 'POST',
           body: paymentPayload,

@@ -79,7 +79,7 @@ const ThursdayNight = () => {
             upComing: UpcomingEvent[];
             pastEvents: PastEvent[];
           };
-        }>('/api/members/retrieve/thursday-night/events/list', { method: 'GET' });
+        }>('/api/events/retrieve/thursday-night/data/list', { method: 'GET' });
 
         if (eventsRes?.success && eventsRes.data) {
           setUpcomingEvents(eventsRes.data.upComing || []);
@@ -104,7 +104,7 @@ const ThursdayNight = () => {
         }
       } catch (err) {
         console.error('Failed to load Thursday Night data:', err);
-        setError('Failed to load events. Please try again later.');
+      //  setError('Failed to load events. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -312,7 +312,7 @@ const ThursdayNight = () => {
             handleRegistrationSuccess(null);
           }}
           event={{
-            id: Number(selectedEvent.id),
+            id: selectedEvent.id,
             degree: selectedEvent.degree,
             name: selectedEvent.name,
             date: selectedEvent.date,
