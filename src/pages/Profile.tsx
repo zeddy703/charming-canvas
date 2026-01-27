@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -369,10 +370,77 @@ const Profile = () => {
 
             {loading ? (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="h-96 bg-card/50 border border-border rounded-2xl animate-pulse" />
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="h-64 bg-card/50 border border-border rounded-2xl animate-pulse" />
-                  <div className="h-64 bg-card/50 border border-border rounded-2xl animate-pulse" />
+                {/* Profile Card Skeleton */}
+                <div className="progress-card p-8 text-center">
+                  <div className="flex flex-col items-center">
+                    <Skeleton className="w-40 h-40 rounded-full mb-8" />
+                    <Skeleton className="h-8 w-48 mb-2" />
+                    <Skeleton className="h-6 w-40 mb-1" />
+                    <Skeleton className="h-5 w-32" />
+                    <div className="mt-8 pt-8 border-t border-border w-full space-y-4">
+                      <div className="flex items-center justify-center gap-3">
+                        <Skeleton className="h-5 w-36" />
+                      </div>
+                      <div className="flex items-center justify-center gap-3">
+                        <Skeleton className="h-5 w-44" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact & Address Skeletons */}
+                <div className="lg:col-span-2 space-y-8">
+                  {/* Contact Information Skeleton */}
+                  <div className="progress-card p-8">
+                    <div className="flex items-center gap-3 mb-6">
+                      <Skeleton className="h-6 w-6 rounded" />
+                      <Skeleton className="h-6 w-48" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-16" />
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-16" />
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Address Skeleton */}
+                  <div className="progress-card p-8">
+                    <div className="flex items-center gap-3 mb-6">
+                      <Skeleton className="h-6 w-6 rounded" />
+                      <Skeleton className="h-6 w-32" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="md:col-span-2 space-y-2">
+                        <Skeleton className="h-4 w-28" />
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-12" />
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-14" />
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : (
