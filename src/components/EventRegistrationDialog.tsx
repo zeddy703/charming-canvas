@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { z } from 'zod';
 import apiRequest from '@/utils/api';
 import { ApiError } from '@/utils/api';
+import { initiatePayment } from '@/utils/init';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, CreditCard, CheckCircle, XCircle, AlertTriangle, Smartphone } from 'lucide-react';
+import { Loader2, CreditCard, CheckCircle, XCircle, AlertTriangle, Smartphone, Currency } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface EventRegistrationDialogProps {
@@ -34,6 +35,8 @@ interface EventRegistrationDialogProps {
     time: string;
     isFree?: boolean;
     price?: number;
+    referenceId?: string;
+    referenceType?: string;
   };
 }
 
@@ -91,6 +94,7 @@ interface RegistrationResponse {
   status?: string;
   rate?: number;
   currency?: string;
+  requiresPayment?: boolean;
   data?: {
     registrationId: string;
     requiresPayment: boolean;
@@ -111,6 +115,8 @@ interface PaymentResponse {
     transactionId: string;
     status: string;
     checkoutId?: string;
+    payId?: string;
+    paymentMethod?: string;
   };
 }
 
@@ -301,10 +307,12 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
     try {
       const payload = {
         eventId: event.id,
+        referenceId: event.referenceId,
         fullName: sanitizeInput(fullName),
         email: sanitizeInput(email),
         memberNumber: sanitizeInput(memberNumber),
         valley,
+        type: event.referenceType,
         isFree: isFreeEvent,
         price: isFreeEvent ? 0 : eventPrice,
       };
@@ -331,7 +339,7 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
           });
         }
       } else {
-        if(response?.status === "pending") {
+        if(response?.status !== "completed" && response?.requiresPayment) {
           return setStep('payment');
         }
         setErrorMessage(response?.error || 'Registration failed. Please try again.');
@@ -398,13 +406,25 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
     setErrorMessage('');
 
     try {
+      const data = {
+        referenceType: event?.referenceType, 
+        referenceId: event?.referenceId, 
+        paymentMethod: selectedPaymentMethod, 
+        amount: displayAmount, 
+        currency: isMobilePayment ? "KES" : "USD"
+      }
+      const initRes = await initiatePayment(data);
+
+      if(!initRes?.success || !initRes?.data) {
+         setErrorMessage(initRes?.message || initRes?.error || 'Payment failed. Please try again.');
+        setStep('error');
+        return;
+      }
+
       const paymentPayload = {
-        registrationId,
-        eventId: event.id,
-        methodId: selectedPaymentMethod,
-        amount: displayAmount,
-        currency: isMobilePayment ? 'KES' : 'USD',
-        ...(isMobilePayment && { phone: mobilePhoneNumber.replace(/\s/g, '') }),
+        payId: initRes?.data?.payId,
+        methodId: initRes?.data?.paymentMethod,
+          ...(isMobilePayment && { phone: mobilePhoneNumber.replace(/\s/g, '') }),
       };
 
       const response = await apiRequest<PaymentResponse>(
@@ -539,16 +559,28 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
     setErrorMessage('');
 
     try {
+       const data = {
+         referenceType: event?.referenceType, 
+         referenceId: event?.referenceId, 
+         paymentMethod: "paypal", 
+         amount: eventPrice, 
+         currency: "USD", 
+         firstName:validatedData.firstName.trim(), 
+         lastName: validatedData.lastName.trim(), 
+         email: validatedData.email.trim(),
+       }
+      const initRes = await initiatePayment(data);
+
+      if(!initRes?.success || !initRes?.data) {
+         setErrorMessage(initRes?.message || initRes?.error || 'Payment failed. Please try again.');
+        setStep('error');
+        return;
+      }
+
       const payload = {
-        registrationId,
-        eventId: event.id,
-        methodId: 'paypal',
-        amount: eventPrice,
-        currency: 'USD',
-        firstName: validatedData.firstName.trim(),
-        lastName: validatedData.lastName.trim(),
-        email: validatedData.email.trim(),
-        phone: validatedData.phone?.trim() || undefined,
+        payId: initRes.data.payId,
+        methodId: "paypal",
+        phone: validatedData.phone
       };
 
       const res = await apiRequest<PaymentResponse>(

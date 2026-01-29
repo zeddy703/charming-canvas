@@ -18,6 +18,8 @@ interface UpcomingEvent {
   isFree?: boolean;     // you'll need to add this field in backend or decide logic
   price?: number;       // same as above
   _id?: string;
+  referenceType?: string;
+  referenceId?: string;
 }
 
 interface EventRegistrationDialogProps {
@@ -85,23 +87,13 @@ const ThursdayNight = () => {
         if (eventsRes?.success && eventsRes.data) {
           setUpcomingEvents(eventsRes.data.upComing || []);
           setPastEvents(eventsRes.data.pastEvents || []);
-        }
+             const registeredIds = new Set<string>(
+          eventsRes.data.upComing
+        .filter((e: any) => e.registered === true)
+        .map((e: any) => e.id)
+    );
 
-        // 2. Fetch user-specific registrations & watched status
-        const userRes = await apiRequest<UserEventsResponse>(
-          '/api/members/retrieve/thursday-night/user-events/data/list',
-          { method: 'GET' }
-        );
-
-        if (userRes?.success && userRes.data) {
-          setRegisteredEventIds(new Set(userRes.data.upcoming || []));
-          
-          // If backend sends watched events in pastEvents or separate field:
-          if (userRes.data.pastEvents) {
-            setWatchedEventIds(new Set(userRes.data.pastEvents));
-          }
-          // Alternative: if watched is separate field, e.g. userRes.data.watched
-          // setWatchedEventIds(new Set(userRes.data.watched || []));
+    setRegisteredEventIds(registeredIds);
         }
       } catch (err) {
         console.error('Failed to load Thursday Night data:', err);
@@ -385,6 +377,8 @@ const ThursdayNight = () => {
             time: selectedEvent.time || '',
             isFree: selectedEvent.isFree,
             price: selectedEvent.price,
+            referenceId: selectedEvent.referenceId,
+            referenceType: selectedEvent.referenceType
           }}
         />
       )}

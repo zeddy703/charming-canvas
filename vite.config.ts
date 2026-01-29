@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
 
     hmr: {
-      host: "corners-singing-pot-dairy.trycloudflare.com", // ✅ Your tunnel URL
+      host: "hollow-consolidation-faqs-several.trycloudflare.com", // ✅ Your tunnel URL
       protocol: "wss",
       clientPort: 443,
     },
