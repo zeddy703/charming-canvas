@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import apiRequest from '@/utils/api';
 import EventRegistrationDialog from '@/components/EventRegistrationDialog';
-
+import VideoPlayerDialog from '@/components/VideoPlayerDialog';
 interface UpcomingEvent {
   id: string;           // changed to string to match your API
   degree: string;
@@ -42,7 +42,8 @@ interface PastEvent {
   degree: string;
   name: string;
   date: string;
-  watched?: boolean;    // we'll compute from user watched list
+  watched?: boolean;
+  videoUrl?: string;
   _id?: string;
 }
 
@@ -69,6 +70,8 @@ const ThursdayNight = () => {
   const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<UpcomingEvent | null>(null);
 
+  const [videoDialogOpen, setVideoDialogOpen] = useState(false);
+  const [selectedPastEvent, setSelectedPastEvent] = useState<PastEvent | null>(null);
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -113,9 +116,12 @@ const ThursdayNight = () => {
   };
 
   const handleRegistrationSuccess = (eventId: string) => {
-    // Optimistic update
     setRegisteredEventIds(prev => new Set([...prev, eventId]));
-    // You can also refetch user data here if needed
+  };
+
+  const handleWatchClick = (event: PastEvent) => {
+    setSelectedPastEvent(event);
+    setVideoDialogOpen(true);
   };
 
   if (loading) {
@@ -342,7 +348,11 @@ const ThursdayNight = () => {
                             <p className="text-sm text-muted-foreground">{event.date}</p>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleWatchClick(event)}
+                        >
                           <Play size={14} className="mr-1" />
                           {isWatched ? 'Rewatch' : 'Watch'}
                         </Button>
@@ -382,6 +392,20 @@ const ThursdayNight = () => {
           }}
         />
       )}
+
+      {/* Video Player Dialog */}
+      <VideoPlayerDialog
+        isOpen={videoDialogOpen}
+        onClose={() => {
+          setVideoDialogOpen(false);
+          setSelectedPastEvent(null);
+        }}
+        event={selectedPastEvent ? {
+          name: selectedPastEvent.name,
+          degree: selectedPastEvent.degree,
+          videoUrl: selectedPastEvent.videoUrl
+        } : null}
+      />
     </div>
   );
 };
