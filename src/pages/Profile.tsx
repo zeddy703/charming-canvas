@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/components/ui/use-toast';
 import apiRequest from '@/utils/api';
+import PasswordStrengthIndicator from '@/components/PasswordStrengthIndicator';
 
 interface ProfileData {
   firstName: string;
@@ -741,6 +742,7 @@ const Profile = () => {
                             {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                           </button>
                         </div>
+                        <PasswordStrengthIndicator password={newPassword} />
                       </div>
                       <div>
                         <Label htmlFor="confirmPassword">Confirm New Password</Label>
