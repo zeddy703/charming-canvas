@@ -18,6 +18,8 @@ import {
   Lock,
   Eye,
   EyeOff,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -98,6 +100,8 @@ const Profile = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const [profile, setProfile] = useState<ProfileData>({
     firstName: '',
@@ -391,6 +395,35 @@ const Profile = () => {
       });
     } finally {
       setChangingPassword(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeletingAccount(true);
+    try {
+      const res = await apiRequest<{ success: boolean; message?: string }>(
+        '/api/user/account/delete',
+        {
+          method: 'DELETE',
+        }
+      );
+
+      if (!res?.success) {
+        throw new Error(res?.message || 'Failed to delete account');
+      }
+
+      // Redirect to login or home page after successful deletion
+      window.location.href = '/';
+    } catch (err: any) {
+      console.error('Account deletion failed:', err);
+      showToast({
+        title: 'Deletion Failed',
+        description: err?.message || 'Failed to delete account. Please try again.',
+        type: 'error',
+      });
+      setDeleteDialogOpen(false);
+    } finally {
+      setDeletingAccount(false);
     }
   };
 
@@ -782,6 +815,64 @@ const Profile = () => {
                         )}
                       </Button>
                     </div>
+                  </div>
+
+                  {/* Delete Account Card */}
+                  <div className="progress-card p-8 animate-fade-in border-destructive/20" style={{ animationDelay: '400ms' }}>
+                    <h3 className="font-heading text-xl font-semibold mb-4 flex items-center gap-3 text-destructive">
+                      <Trash2 className="text-destructive" size={24} />
+                      Delete Account
+                    </h3>
+                    <p className="text-muted-foreground mb-6">
+                      Permanently delete your account and all associated data. This action cannot be undone.
+                    </p>
+                    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="w-full">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete My Account
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="flex items-center gap-3 text-destructive">
+                            <AlertTriangle size={24} />
+                            Delete Account Permanently?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription className="space-y-3">
+                            <p>
+                              <strong>Warning:</strong> This action is <strong>irreversible</strong>. Once you delete your account:
+                            </p>
+                            <ul className="list-disc list-inside space-y-1 text-sm">
+                              <li>All your personal data will be permanently erased</li>
+                              <li>Your membership history will be lost</li>
+                              <li>You will lose access to all features and content</li>
+                              <li>This action cannot be undone or recovered</li>
+                            </ul>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel disabled={deletingAccount}>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleDeleteAccount}
+                            disabled={deletingAccount}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            {deletingAccount ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Deleting...
+                              </>
+                            ) : (
+                              <>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Yes, Delete My Account
+                              </>
+                            )}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </div>
