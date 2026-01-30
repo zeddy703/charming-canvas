@@ -11,6 +11,7 @@ import {
   Wallet,
   Loader2
 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -224,10 +225,88 @@ const Payments = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading payment information...</p>
+      <div className="min-h-screen bg-background flex">
+        <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+
+        <div className="flex-1 flex flex-col min-w-0">
+          <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+
+          <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
+            <div className="max-w-4xl mx-auto">
+              {/* Header Skeleton */}
+              <div className="mb-8">
+                <Skeleton className="h-9 w-48 mb-2" />
+                <Skeleton className="h-5 w-72" />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Dues Status Skeleton */}
+                <div className="progress-card">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Skeleton className="w-12 h-12 rounded-full" />
+                    <div>
+                      <Skeleton className="h-5 w-24 mb-1" />
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-5 w-20 mb-4" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-4 w-36" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </div>
+
+                {/* Pay Now Skeleton */}
+                <div className="lg:col-span-2 progress-card">
+                  <Skeleton className="h-6 w-32 mb-4" />
+                  <div className="bg-muted/50 rounded-lg p-4 mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-7 w-20" />
+                    </div>
+                    <Skeleton className="h-4 w-40" />
+                  </div>
+                  <Skeleton className="h-10 w-28" />
+                </div>
+              </div>
+
+              {/* Accepted Methods Skeleton */}
+              <div className="progress-card mt-6">
+                <Skeleton className="h-6 w-48 mb-4" />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="flex flex-col items-center gap-2 p-4 bg-muted/30 rounded-lg">
+                      <Skeleton className="w-12 h-12 rounded-full" />
+                      <Skeleton className="h-4 w-16" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payment History Skeleton */}
+              <div className="progress-card mt-6">
+                <Skeleton className="h-6 w-36 mb-4" />
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex justify-between items-center p-4 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-4">
+                        <Skeleton className="w-10 h-10 rounded-full" />
+                        <div>
+                          <Skeleton className="h-5 w-32 mb-1" />
+                          <Skeleton className="h-4 w-24" />
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Skeleton className="h-5 w-16 mb-1" />
+                        <Skeleton className="h-5 w-20" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </main>
         </div>
       </div>
     );
