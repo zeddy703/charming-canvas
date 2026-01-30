@@ -15,6 +15,9 @@ import {
   X,
   CheckCircle2,
   AlertCircle,
+  Lock,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -85,6 +88,15 @@ const Profile = () => {
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Password change state
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const [profile, setProfile] = useState<ProfileData>({
     firstName: '',
@@ -317,6 +329,68 @@ const Profile = () => {
       setPreviewAvatar(originalProfile.avatarUrl || null);
     }
     setIsEditing(false);
+  };
+
+  const handleChangePassword = async () => {
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      showToast({
+        title: 'Missing Fields',
+        description: 'Please fill in all password fields.',
+        type: 'error',
+      });
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      showToast({
+        title: 'Password Too Short',
+        description: 'New password must be at least 8 characters long.',
+        type: 'error',
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      showToast({
+        title: 'Passwords Do Not Match',
+        description: 'New password and confirm password must match.',
+        type: 'error',
+      });
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const res = await apiRequest<{ success: boolean; message?: string }>(
+        '/api/user/account/password/change',
+        {
+          method: 'POST',
+          body: { oldPassword, newPassword },
+        }
+      );
+
+      if (!res?.success) {
+        throw new Error(res?.message || 'Failed to change password');
+      }
+
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      showToast({
+        title: 'Password Changed',
+        description: 'Your password has been updated successfully.',
+        type: 'success',
+      });
+    } catch (err: any) {
+      console.error('Password change failed:', err);
+      showToast({
+        title: 'Password Change Failed',
+        description: err?.message || 'Please check your old password and try again.',
+        type: 'error',
+      });
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   return (
@@ -618,6 +692,93 @@ const Profile = () => {
                           onChange={(e) => setProfile({ ...profile, zip: e.target.value })}
                         />
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Change Password Card */}
+                  <div className="progress-card p-8 animate-fade-in" style={{ animationDelay: '300ms' }}>
+                    <h3 className="font-heading text-xl font-semibold mb-6 flex items-center gap-3">
+                      <Lock className="text-primary" size={24} />
+                      Change Password
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="oldPassword">Current Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="oldPassword"
+                            type={showOldPassword ? 'text' : 'password'}
+                            value={oldPassword}
+                            onChange={(e) => setOldPassword(e.target.value)}
+                            placeholder="Enter your current password"
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowOldPassword(!showOldPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            {showOldPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="newPassword">New Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="newPassword"
+                            type={showNewPassword ? 'text' : 'password'}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="Enter new password (min 8 characters)"
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="confirmPassword"
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Confirm new password"
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={handleChangePassword}
+                        disabled={changingPassword || !oldPassword || !newPassword || !confirmPassword}
+                        className="w-full mt-2"
+                      >
+                        {changingPassword ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Changing Password...
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="mr-2 h-4 w-4" />
+                            Change Password
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </div>
                 </div>
