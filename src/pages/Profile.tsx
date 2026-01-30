@@ -362,16 +362,16 @@ const Profile = () => {
 
     setChangingPassword(true);
     try {
-      const res = await apiRequest<{ success: boolean; message?: string }>(
+      const res = await apiRequest<{ success: boolean; message?: string; error?: string; }>(
         '/api/user/account/password/change',
         {
           method: 'POST',
-          body: { oldPassword, newPassword },
+          body: { currentPassword: oldPassword, newPassword, confirmPassword },
         }
       );
 
       if (!res?.success) {
-        throw new Error(res?.message || 'Failed to change password');
+        throw new Error(res?.message || res?.error || 'Failed to change password');
       }
 
       setOldPassword('');
