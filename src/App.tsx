@@ -12,6 +12,7 @@ import ThursdayNight from "./pages/ThursdayNight";
 import Contacts from "./pages/Contacts";
 import MailingPreferences from "./pages/MailingPreferences";
 import MyTickets from "./pages/MyTickets";
+import TicketDetail from "./pages/TicketDetail";
 import CreateTicket from "./pages/CreateTicket";
 import ValleyOfExcellence from "./pages/ValleyOfExcellence";
 import MyAchievements from "./pages/MyAchievements";
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/mailing-preferences" element={<MailingPreferences />} />
             <Route path="/my-tickets" element={<MyTickets />} />
+            <Route path="/my-tickets/:id" element={<TicketDetail />} />
             <Route path="/create-ticket" element={<CreateTicket />} />
             <Route path="/valley-of-excellence" element={<ValleyOfExcellence />} />
             <Route path="/my-achievements" element={<MyAchievements />} />
