@@ -25,11 +25,12 @@ import ChatSupport from "./components/ChatSupport";
 import SessionExpiredProvider from "./components/SessionExpiredProvider";
 
 const queryClient = new QueryClient();
+const login = `${import.meta.env.VITE_LOGIN_REDIRECT_URL}`
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <SessionExpiredProvider loginUrl="/login">
+      <SessionExpiredProvider loginUrl = {login}>
         <Toaster />
         <Sonner />
         <BrowserRouter>

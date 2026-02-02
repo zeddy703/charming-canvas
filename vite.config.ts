@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
 
     hmr: {
-      host: "obituaries-regarded-offers-editor.trycloudflare.com", // ✅ Your tunnel URL
+      host: "cleared-colors-tenant-promote.trycloudflare.com", // ✅ Your tunnel URL
       protocol: "wss",
       clientPort: 443,
     },

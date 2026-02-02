@@ -9,7 +9,8 @@ import {
   FileText, 
   Smartphone, 
   Wallet,
-  Loader2
+  Loader2,
+  Phone
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ import { useToast } from '@/components/ui/use-toast';
 import apiRequest from '@/utils/api';
 import PaymentConfirmationDialog from '@/components/PaymentConfirmationDialog';
 import PaypalPaymentOverlay from '@/components/PaypalPaymentOverlay';
+import { initiatePayment } from '@/utils/init';
 
 interface PaymentMethod {
   id: string;
@@ -163,9 +165,29 @@ const Payments = () => {
     setIsProcessing(true);
 
     try {
+
+         const data = {
+         referenceType: "DUES", 
+         referenceId: "D-3687-12", 
+         paymentMethod: "paypal", 
+         amount: 155, 
+         currency: "USD", 
+         firstName: null, 
+         lastName: null, 
+         email: null,
+       }
+      const initRes = await initiatePayment(data);
+
+      if(!initRes?.success || !initRes?.data) {
+         //setErrorMessage(initRes?.message || initRes?.error || 'Payment failed. Please try again.');
+        //setStep('error');
+        return;
+      }
+
       const payload: any = {
+        payId: initRes?.data?.paymentId,
         methodId: selectedMethod,
-        amount: duesStatus?.amount || 155.00,
+        phone:""
       };
 
       if (requiresPhone) {
