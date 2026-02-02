@@ -239,9 +239,11 @@ const MyTickets = () => {
                         </div>
                       </div>
 
-                      <Button variant="outline" size="sm">
-                        View Details
-                      </Button>
+                      <Link to={`/my-tickets/${ticket.id}`}>
+                        <Button variant="outline" size="sm">
+                          View Details
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 ))}
