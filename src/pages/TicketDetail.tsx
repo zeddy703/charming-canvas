@@ -10,11 +10,15 @@ import {
   ArrowLeft,
   User,
   Calendar,
+  Send,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import apiRequest from "@/utils/api";
 
 /* -------------------- Helpers -------------------- */
@@ -90,6 +94,8 @@ const TicketDetailPage = () => {
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [replyMessage, setReplyMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchTicketDetail = async () => {
@@ -117,6 +123,41 @@ const TicketDetailPage = () => {
       fetchTicketDetail();
     }
   }, [id]);
+
+  const handleSubmitReply = async () => {
+    if (!replyMessage.trim() || !id) return;
+
+    try {
+      setSubmitting(true);
+      const res = await apiRequest(`/api/tickets/user/reply/${id}`, {
+        method: "POST",
+        body: { message: replyMessage.trim() },
+      });
+
+      if (!res?.success) {
+        throw new Error(res?.error || "Failed to send reply");
+      }
+
+      // Add the new reply to the list
+      if (ticket) {
+        setTicket({
+          ...ticket,
+          replies: [...(ticket.replies || []), res.data],
+        });
+      }
+      setReplyMessage("");
+      toast.success("Reply sent successfully");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to send reply");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const canReply = ticket && 
+    ticket.replies && 
+    ticket.replies.length > 0 && 
+    ticket.status !== "closed";
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -280,6 +321,48 @@ const TicketDetailPage = () => {
                       </div>
                     ))}
                   </div>
+
+                  {/* Reply Form */}
+                  {canReply && (
+                    <>
+                      <Separator className="my-4" />
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-sm">Send a Reply</h4>
+                        <Textarea
+                          placeholder="Type your reply here..."
+                          value={replyMessage}
+                          onChange={(e) => setReplyMessage(e.target.value)}
+                          className="min-h-[100px]"
+                          disabled={submitting}
+                        />
+                        <div className="flex justify-end">
+                          <Button
+                            onClick={handleSubmitReply}
+                            disabled={!replyMessage.trim() || submitting}
+                          >
+                            {submitting ? (
+                              <>
+                                <Loader2 size={16} className="mr-2 animate-spin" />
+                                Sending...
+                              </>
+                            ) : (
+                              <>
+                                <Send size={16} className="mr-2" />
+                                Send Reply
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Closed ticket notice */}
+                  {ticket && ticket.status === "closed" && ticket.replies && ticket.replies.length > 0 && (
+                    <div className="mt-4 p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground text-center">
+                      This ticket is closed and no longer accepts replies.
+                    </div>
+                  )}
                 </div>
               </div>
             )}
