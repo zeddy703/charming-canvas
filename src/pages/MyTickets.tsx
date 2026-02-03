@@ -12,6 +12,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import apiRequest from "@/utils/api";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
+
+const TICKETS_PER_PAGE = 5;
 
 /* -------------------- Helpers -------------------- */
 
@@ -73,11 +84,14 @@ const MyTickets = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [currentPage, setCurrentPage] = useState(1);
+
   /* -------------------- Fetch Tickets -------------------- */
   useEffect(() => {
     const fetchTickets = async () => {
       try {
         setLoading(true);
+        setCurrentPage(1); // Reset to first page on fetch
 
         const res = await apiRequest("/api/tickets/user/get/ticket_report", {
           method: "GET"
@@ -102,6 +116,27 @@ const MyTickets = () => {
   const openCount = tickets.filter(t => t.status === "open").length;
   const pendingCount = tickets.filter(t => t.status === "pending").length;
   const resolvedCount = tickets.filter(t => t.status === "resolved").length;
+
+  /* -------------------- Pagination -------------------- */
+  const totalPages = Math.ceil(tickets.length / TICKETS_PER_PAGE);
+  const startIndex = (currentPage - 1) * TICKETS_PER_PAGE;
+  const paginatedTickets = tickets.slice(startIndex, startIndex + TICKETS_PER_PAGE);
+
+  const getVisiblePages = () => {
+    const pages: (number | "ellipsis")[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push("ellipsis");
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (currentPage < totalPages - 2) pages.push("ellipsis");
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   /* -------------------- UI -------------------- */
   return (
@@ -195,7 +230,7 @@ const MyTickets = () => {
               )}
 
               <div className="space-y-3">
-                {tickets.map(ticket => (
+                {paginatedTickets.map(ticket => (
                   <div
                     key={ticket.id}
                     className="p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
@@ -248,6 +283,47 @@ const MyTickets = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="mt-6 flex justify-center">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+
+                      {getVisiblePages().map((page, idx) =>
+                        page === "ellipsis" ? (
+                          <PaginationItem key={`ellipsis-${idx}`}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        ) : (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              onClick={() => setCurrentPage(page)}
+                              isActive={currentPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        )
+                      )}
+
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
             </div>
           </div>
         </main>
