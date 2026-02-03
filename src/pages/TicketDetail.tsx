@@ -97,7 +97,7 @@ const TicketDetailPage = () => {
         setLoading(true);
         setError(null);
 
-        const res = await apiRequest(`/api/tickets/user/get/${id}`, {
+        const res = await apiRequest(`/api/tickets/user/get/myticket/${id}`, {
           method: "GET",
         });
 
@@ -112,7 +112,7 @@ const TicketDetailPage = () => {
         setLoading(false);
       }
     };
-
+ 
     if (id) {
       fetchTicketDetail();
     }
