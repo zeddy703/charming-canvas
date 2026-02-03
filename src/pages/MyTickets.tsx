@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import {
@@ -7,6 +7,7 @@ import {
   CheckCircle,
   AlertCircle,
   MessageSquare,
+  ArrowUpDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,8 +22,17 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const TICKETS_PER_PAGE = 5;
+
+type SortOption = "date-desc" | "date-asc" | "priority-high" | "priority-low";
 
 /* -------------------- Helpers -------------------- */
 
@@ -85,7 +95,9 @@ const MyTickets = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<SortOption>("date-desc");
 
+  const priorityOrder = { high: 3, medium: 2, low: 1 };
   /* -------------------- Fetch Tickets -------------------- */
   useEffect(() => {
     const fetchTickets = async () => {
@@ -117,10 +129,27 @@ const MyTickets = () => {
   const pendingCount = tickets.filter(t => t.status === "pending").length;
   const resolvedCount = tickets.filter(t => t.status === "resolved").length;
 
+  /* -------------------- Sorting -------------------- */
+  const sortedTickets = useMemo(() => {
+    const sorted = [...tickets];
+    switch (sortBy) {
+      case "date-desc":
+        return sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      case "date-asc":
+        return sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      case "priority-high":
+        return sorted.sort((a, b) => priorityOrder[b.priority] - priorityOrder[a.priority]);
+      case "priority-low":
+        return sorted.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+      default:
+        return sorted;
+    }
+  }, [tickets, sortBy]);
+
   /* -------------------- Pagination -------------------- */
-  const totalPages = Math.ceil(tickets.length / TICKETS_PER_PAGE);
+  const totalPages = Math.ceil(sortedTickets.length / TICKETS_PER_PAGE);
   const startIndex = (currentPage - 1) * TICKETS_PER_PAGE;
-  const paginatedTickets = tickets.slice(startIndex, startIndex + TICKETS_PER_PAGE);
+  const paginatedTickets = sortedTickets.slice(startIndex, startIndex + TICKETS_PER_PAGE);
 
   const getVisiblePages = () => {
     const pages: (number | "ellipsis")[] = [];
@@ -210,10 +239,33 @@ const MyTickets = () => {
 
             {/* Tickets List */}
             <div className="progress-card">
-              <h3 className="font-heading text-lg font-semibold mb-4 flex items-center gap-2">
-                <Ticket className="text-primary" size={20} />
-                All Tickets
-              </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <h3 className="font-heading text-lg font-semibold flex items-center gap-2">
+                  <Ticket className="text-primary" size={20} />
+                  All Tickets
+                </h3>
+
+                <div className="flex items-center gap-2">
+                  <ArrowUpDown size={16} className="text-muted-foreground" />
+                  <Select
+                    value={sortBy}
+                    onValueChange={(value: SortOption) => {
+                      setSortBy(value);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="date-desc">Newest First</SelectItem>
+                      <SelectItem value="date-asc">Oldest First</SelectItem>
+                      <SelectItem value="priority-high">Priority: High → Low</SelectItem>
+                      <SelectItem value="priority-low">Priority: Low → High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
               {loading && (
                 <p className="text-sm text-muted-foreground">Loading tickets…</p>
