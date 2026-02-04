@@ -1,100 +1,53 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
-import { Award, Trophy, Star, Medal, Crown, Target, Users, Calendar, CheckCircle, Lock } from 'lucide-react';
+import { Award, Trophy, Star, Medal, Crown, Target, Users, Calendar, CheckCircle, Lock, LucideIcon } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import apiRequest from '@/utils/api';
 
-const achievements = [
-  {
-    id: 'pathfinder',
-    name: 'Pathfinder Program',
-    description: 'Complete all Pathfinder milestones',
-    icon: Target,
-    progress: 60,
-    unlocked: false,
-    tier: 'gold',
-  },
-  {
-    id: 'degree-master',
-    name: 'Degree Master',
-    description: 'Witness all 29 Scottish Rite degrees',
-    icon: Award,
-    progress: 45,
-    unlocked: false,
-    tier: 'platinum',
-  },
-  {
-    id: 'tnr-attendee',
-    name: 'TNR Regular',
-    description: 'Attend 10 Thursday Night at the Rite events',
-    icon: Calendar,
-    progress: 100,
-    unlocked: true,
-    tier: 'silver',
-  },
-  {
-    id: 'community-builder',
-    name: 'Community Builder',
-    description: 'Refer 3 new members to the Valley',
-    icon: Users,
-    progress: 100,
-    unlocked: true,
-    tier: 'bronze',
-  },
-  {
-    id: 'philanthropy',
-    name: 'Philanthropist',
-    description: 'Contribute to Scottish Rite charitable causes',
-    icon: Medal,
-    progress: 100,
-    unlocked: true,
-    tier: 'gold',
-  },
-  {
-    id: 'leadership',
-    name: 'Valley Leader',
-    description: 'Serve in a Valley leadership position',
-    icon: Crown,
-    progress: 0,
-    unlocked: false,
-    tier: 'platinum',
-  },
-];
+interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  progress: number;
+  unlocked: boolean;
+  tier: string;
+}
 
-const recognitionBadges = [
-  {
-    id: 'member-5',
-    name: '5 Year Member',
-    description: 'Member for 5 consecutive years',
-    icon: Star,
-    unlocked: true,
-    year: 2019,
-  },
-  {
-    id: 'member-10',
-    name: '10 Year Member',
-    description: 'Member for 10 consecutive years',
-    icon: Star,
-    unlocked: false,
-    year: null,
-  },
-  {
-    id: 'first-degree',
-    name: 'First Steps',
-    description: 'Received your first Scottish Rite degree',
-    icon: CheckCircle,
-    unlocked: true,
-    year: 2019,
-  },
-  {
-    id: '32nd-degree',
-    name: '32° Mason',
-    description: 'Achieved the 32nd degree',
-    icon: Trophy,
-    unlocked: true,
-    year: 2020,
-  },
-];
+interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  unlocked: boolean;
+  year: number | null;
+}
+
+interface AchievementsSummary {
+  success: boolean;
+  data: {
+    acheivements: Achievement[];
+    badges: Badge[];
+  };
+}
+
+const iconMap: Record<string, LucideIcon> = {
+  Target,
+  Award,
+  Calendar,
+  Users,
+  Medal,
+  Crown,
+  Star,
+  CheckCircle,
+  Trophy,
+};
+
+const getIcon = (iconName: string): LucideIcon => {
+  return iconMap[iconName] || Star;
+};
 
 const getTierColor = (tier: string) => {
   switch (tier) {
@@ -128,10 +81,59 @@ const getTierBorder = (tier: string) => {
 
 const ValleyOfExcellence = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAchievements = async () => {
+      try {
+        setLoading(true);
+        const res: AchievementsSummary = await apiRequest('/api/me/achievements-summary', {
+          method: 'GET',
+        });
+        if (res?.success && res?.data) {
+          setAchievements(res.data.acheivements || []);
+          setBadges(res.data.badges || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch achievements:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAchievements();
+  }, []);
 
   const unlockedAchievements = achievements.filter(a => a.unlocked).length;
   const totalAchievements = achievements.length;
-  const unlockedBadges = recognitionBadges.filter(b => b.unlocked).length;
+  const unlockedBadges = badges.filter(b => b.unlocked).length;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex">
+        <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+        <div className="flex-1 flex flex-col min-w-0">
+          <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+          <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
+            <div className="max-w-5xl mx-auto">
+              <div className="mb-8">
+                <Skeleton className="h-9 w-64 mb-2" />
+                <Skeleton className="h-5 w-96" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                {[1, 2, 3].map(i => (
+                  <Skeleton key={i} className="h-24 rounded-xl" />
+                ))}
+              </div>
+              <Skeleton className="h-96 rounded-xl mb-6" />
+              <Skeleton className="h-64 rounded-xl" />
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -196,7 +198,7 @@ const ValleyOfExcellence = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {achievements.map((achievement, index) => {
-                  const Icon = achievement.icon;
+                  const Icon = getIcon(achievement.icon);
                   return (
                     <div
                       key={achievement.id}
@@ -262,8 +264,8 @@ const ValleyOfExcellence = () => {
               </h2>
               
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {recognitionBadges.map((badge, index) => {
-                  const Icon = badge.icon;
+                {badges.map((badge, index) => {
+                  const Icon = getIcon(badge.icon);
                   return (
                     <div
                       key={badge.id}
