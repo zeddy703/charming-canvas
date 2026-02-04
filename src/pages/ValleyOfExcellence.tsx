@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
-import { Award, Trophy, Star, Medal, Crown, Target, Users, Calendar, CheckCircle, Lock, LucideIcon, RefreshCw } from 'lucide-react';
+import { Award, Trophy, Star, Medal, Crown, Target, Users, Calendar, CheckCircle, Lock, LucideIcon, RefreshCw, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import apiRequest from '@/utils/api';
@@ -86,6 +87,8 @@ const ValleyOfExcellence = () => {
   const [badges, setBadges] = useState<Badge[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const fetchAchievements = async (isRefresh = false) => {
     try {
@@ -94,15 +97,28 @@ const ValleyOfExcellence = () => {
       } else {
         setLoading(true);
       }
+      setError(null);
       const res: AchievementsSummary = await apiRequest('/api/me/achievements-summary', {
         method: 'GET',
+        showErrorToast: false,
       });
       if (res?.success && res?.data) {
         setAchievements(res.data.acheivements || []);
         setBadges(res.data.badges || []);
+      } else if (!res?.success) {
+        throw new Error('Failed to load achievements data');
       }
     } catch (err) {
       console.error('Failed to fetch achievements:', err);
+      const errorMessage = 'Unable to load achievements. Please try again.';
+      setError(errorMessage);
+      if (isRefresh) {
+        toast({
+          title: 'Refresh Failed',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -136,6 +152,32 @@ const ValleyOfExcellence = () => {
               </div>
               <Skeleton className="h-96 rounded-xl mb-6" />
               <Skeleton className="h-64 rounded-xl" />
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !loading) {
+    return (
+      <div className="min-h-screen bg-background flex">
+        <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+        <div className="flex-1 flex flex-col min-w-0">
+          <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+          <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
+            <div className="max-w-5xl mx-auto">
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                  <AlertCircle className="text-destructive" size={32} />
+                </div>
+                <h2 className="font-heading text-xl font-semibold text-foreground mb-2">Failed to Load Achievements</h2>
+                <p className="text-muted-foreground max-w-md mb-6">{error}</p>
+                <Button onClick={() => fetchAchievements()} disabled={loading}>
+                  <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                  Try Again
+                </Button>
+              </div>
             </div>
           </main>
         </div>
