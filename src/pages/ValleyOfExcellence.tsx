@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
-import { Award, Trophy, Star, Medal, Crown, Target, Users, Calendar, CheckCircle, Lock, LucideIcon } from 'lucide-react';
+import { Award, Trophy, Star, Medal, Crown, Target, Users, Calendar, CheckCircle, Lock, LucideIcon, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import apiRequest from '@/utils/api';
@@ -84,24 +85,31 @@ const ValleyOfExcellence = () => {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchAchievements = async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      const res: AchievementsSummary = await apiRequest('/api/me/achievements-summary', {
+        method: 'GET',
+      });
+      if (res?.success && res?.data) {
+        setAchievements(res.data.acheivements || []);
+        setBadges(res.data.badges || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch achievements:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchAchievements = async () => {
-      try {
-        setLoading(true);
-        const res: AchievementsSummary = await apiRequest('/api/me/achievements-summary', {
-          method: 'GET',
-        });
-        if (res?.success && res?.data) {
-          setAchievements(res.data.acheivements || []);
-          setBadges(res.data.badges || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch achievements:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchAchievements();
   }, []);
 
@@ -145,9 +153,21 @@ const ValleyOfExcellence = () => {
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
           <div className="max-w-5xl mx-auto">
             {/* Header */}
-            <div className="mb-8">
-              <h1 className="font-heading text-3xl font-bold text-foreground mb-2">Valley of Excellence</h1>
-              <p className="text-muted-foreground">Your achievements and recognition in Scottish Rite Masonry</p>
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="font-heading text-3xl font-bold text-foreground mb-2">Valley of Excellence</h1>
+                <p className="text-muted-foreground">Your achievements and recognition in Scottish Rite Masonry</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchAchievements(true)}
+                disabled={refreshing}
+                className="self-start sm:self-auto"
+              >
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </Button>
             </div>
 
             {/* Stats Overview */}
