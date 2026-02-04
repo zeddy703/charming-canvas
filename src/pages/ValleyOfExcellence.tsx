@@ -196,64 +196,76 @@ const ValleyOfExcellence = () => {
                 Achievements
               </h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {achievements.map((achievement, index) => {
-                  const Icon = getIcon(achievement.icon);
-                  return (
-                    <div
-                      key={achievement.id}
-                      className={`relative p-4 rounded-xl border-2 transition-all duration-300 animate-fade-in ${
-                        achievement.unlocked 
-                          ? `${getTierBorder(achievement.tier)} bg-gradient-to-br from-muted/30 to-muted/10 hover:scale-[1.02]` 
-                          : 'border-border bg-muted/20 opacity-60'
-                      }`}
-                      style={{ animationDelay: `${200 + index * 50}ms` }}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className={`w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 ${
+              {achievements.length === 0 ? (
+                <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <Trophy className="text-muted-foreground" size={32} />
+                  </div>
+                  <h3 className="font-heading font-semibold text-foreground mb-1">No Achievements Yet</h3>
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    Start your journey by participating in Valley activities to unlock achievements.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {achievements.map((achievement, index) => {
+                    const Icon = getIcon(achievement.icon);
+                    return (
+                      <div
+                        key={achievement.id}
+                        className={`relative p-4 rounded-xl border-2 transition-all duration-300 animate-fade-in ${
                           achievement.unlocked 
-                            ? `bg-gradient-to-br ${getTierColor(achievement.tier)}` 
-                            : 'bg-muted'
-                        }`}>
-                          {achievement.unlocked ? (
-                            <Icon className="text-white" size={28} />
-                          ) : (
-                            <Lock className="text-muted-foreground" size={24} />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-heading font-semibold text-foreground">{achievement.name}</h3>
-                            {achievement.unlocked && (
-                              <span className={`text-xs px-2 py-0.5 rounded-full bg-gradient-to-r ${getTierColor(achievement.tier)} text-white font-medium capitalize`}>
-                                {achievement.tier}
-                              </span>
+                            ? `${getTierBorder(achievement.tier)} bg-gradient-to-br from-muted/30 to-muted/10 hover:scale-[1.02]` 
+                            : 'border-border bg-muted/20 opacity-60'
+                        }`}
+                        style={{ animationDelay: `${200 + index * 50}ms` }}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className={`w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            achievement.unlocked 
+                              ? `bg-gradient-to-br ${getTierColor(achievement.tier)}` 
+                              : 'bg-muted'
+                          }`}>
+                            {achievement.unlocked ? (
+                              <Icon className="text-white" size={28} />
+                            ) : (
+                              <Lock className="text-muted-foreground" size={24} />
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">{achievement.description}</p>
-                          
-                          {!achievement.unlocked && achievement.progress > 0 && (
-                            <div className="mt-3">
-                              <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                                <span>Progress</span>
-                                <span>{achievement.progress}%</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-heading font-semibold text-foreground">{achievement.name}</h3>
+                              {achievement.unlocked && (
+                                <span className={`text-xs px-2 py-0.5 rounded-full bg-gradient-to-r ${getTierColor(achievement.tier)} text-white font-medium capitalize`}>
+                                  {achievement.tier}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">{achievement.description}</p>
+                            
+                            {!achievement.unlocked && achievement.progress > 0 && (
+                              <div className="mt-3">
+                                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                  <span>Progress</span>
+                                  <span>{achievement.progress}%</span>
+                                </div>
+                                <Progress value={achievement.progress} className="h-2" />
                               </div>
-                              <Progress value={achievement.progress} className="h-2" />
-                            </div>
-                          )}
-                          
-                          {achievement.unlocked && (
-                            <div className="mt-2 flex items-center gap-1 text-primary">
-                              <CheckCircle size={16} />
-                              <span className="text-sm font-medium">Completed</span>
-                            </div>
-                          )}
+                            )}
+                            
+                            {achievement.unlocked && (
+                              <div className="mt-2 flex items-center gap-1 text-primary">
+                                <CheckCircle size={16} />
+                                <span className="text-sm font-medium">Completed</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Recognition Badges Section */}
@@ -263,39 +275,51 @@ const ValleyOfExcellence = () => {
                 Recognition Badges
               </h2>
               
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {badges.map((badge, index) => {
-                  const Icon = getIcon(badge.icon);
-                  return (
-                    <div
-                      key={badge.id}
-                      className={`relative p-4 rounded-xl text-center transition-all duration-300 animate-fade-in ${
-                        badge.unlocked 
-                          ? 'bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/30 hover:scale-105 hover:shadow-lg hover:shadow-primary/20' 
-                          : 'bg-muted/30 border-2 border-border opacity-50'
-                      }`}
-                      style={{ animationDelay: `${450 + index * 50}ms` }}
-                    >
-                      <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-3 ${
-                        badge.unlocked 
-                          ? 'bg-gradient-to-br from-primary to-primary/70' 
-                          : 'bg-muted'
-                      }`}>
-                        {badge.unlocked ? (
-                          <Icon className="text-white" size={32} />
-                        ) : (
-                          <Lock className="text-muted-foreground" size={24} />
+              {badges.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <Award className="text-muted-foreground" size={32} />
+                  </div>
+                  <h3 className="font-heading font-semibold text-foreground mb-1">No Badges Yet</h3>
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    Badges are awarded for special milestones and years of dedicated service.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {badges.map((badge, index) => {
+                    const Icon = getIcon(badge.icon);
+                    return (
+                      <div
+                        key={badge.id}
+                        className={`relative p-4 rounded-xl text-center transition-all duration-300 animate-fade-in ${
+                          badge.unlocked 
+                            ? 'bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/30 hover:scale-105 hover:shadow-lg hover:shadow-primary/20' 
+                            : 'bg-muted/30 border-2 border-border opacity-50'
+                        }`}
+                        style={{ animationDelay: `${450 + index * 50}ms` }}
+                      >
+                        <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-3 ${
+                          badge.unlocked 
+                            ? 'bg-gradient-to-br from-primary to-primary/70' 
+                            : 'bg-muted'
+                        }`}>
+                          {badge.unlocked ? (
+                            <Icon className="text-white" size={32} />
+                          ) : (
+                            <Lock className="text-muted-foreground" size={24} />
+                          )}
+                        </div>
+                        <h3 className="font-heading font-semibold text-sm text-foreground">{badge.name}</h3>
+                        <p className="text-xs text-muted-foreground mt-1">{badge.description}</p>
+                        {badge.unlocked && badge.year && (
+                          <p className="text-xs text-primary font-medium mt-2">Earned {badge.year}</p>
                         )}
                       </div>
-                      <h3 className="font-heading font-semibold text-sm text-foreground">{badge.name}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">{badge.description}</p>
-                      {badge.unlocked && badge.year && (
-                        <p className="text-xs text-primary font-medium mt-2">Earned {badge.year}</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Encouragement Card */}
