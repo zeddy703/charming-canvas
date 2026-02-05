@@ -30,7 +30,7 @@ interface Badge {
 interface AchievementsSummary {
   success: boolean;
   data: {
-    acheivements: Achievement[];
+    achievements: Achievement[];
     badges: Badge[];
   };
 }
@@ -103,7 +103,7 @@ const ValleyOfExcellence = () => {
         showErrorToast: false,
       });
       if (res?.success && res?.data) {
-        setAchievements(res.data.acheivements || []);
+        setAchievements(res.data.achievements || []);
         setBadges(res.data.badges || []);
       } else if (!res?.success) {
         throw new Error('Failed to load achievements data');

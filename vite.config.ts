@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
 
     hmr: {
-      host: "inner-materials-cohen-wider.trycloudflare.com", // ✅ Your tunnel URL
+      host: "standards-understand-reminder-stanley.trycloudflare.com", // ✅ Your tunnel URL
       protocol: "wss",
       clientPort: 443,
     },
