@@ -305,7 +305,7 @@ const ValleyOfExcellence = () => {
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">{achievement.description}</p>
                             
-                            {!achievement.unlocked && (
+                            {!achievement.unlocked && 'progress' in achievement && (
                               <div className="mt-3">
                                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
                                   <span>Progress</span>
