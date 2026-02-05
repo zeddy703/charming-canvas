@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import {
@@ -8,11 +8,14 @@ import {
   AlertCircle,
   MessageSquare,
   ArrowUpDown,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import apiRequest from "@/utils/api";
+import { useToast } from "@/hooks/use-toast";
 import {
   Pagination,
   PaginationContent,
@@ -96,33 +99,51 @@ const MyTickets = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortOption>("date-desc");
+  const [refreshing, setRefreshing] = useState(false);
+  const { toast } = useToast();
 
   const priorityOrder = { high: 3, medium: 2, low: 1 };
+
   /* -------------------- Fetch Tickets -------------------- */
-  useEffect(() => {
-    const fetchTickets = async () => {
-      try {
+  const fetchTickets = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
         setLoading(true);
-        setCurrentPage(1); // Reset to first page on fetch
-
-        const res = await apiRequest("/api/tickets/user/get/ticket_report", {
-          method: "GET"
-        });
-
-        if (!res?.success) {
-          throw new Error(res?.error || "Failed to fetch tickets");
-        }
-
-        setTickets(res.data || []);
-      } catch (err: any) {
-        setError(err?.message || "Something went wrong");
-      } finally {
-        setLoading(false);
       }
-    };
+      setError(null);
+      setCurrentPage(1);
 
+      const res = await apiRequest("/api/tickets/user/get/ticket_report", {
+        method: "GET",
+        showErrorToast: false,
+      });
+
+      if (!res?.success) {
+        throw new Error(res?.error || "Failed to fetch tickets");
+      }
+
+      setTickets(res.data || []);
+    } catch (err: any) {
+      const message = err?.message || "Something went wrong";
+      setError(message);
+      if (isRefresh) {
+        toast({
+          title: "Refresh Failed",
+          description: message,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
     fetchTickets();
-  }, []);
+  }, [fetchTickets]);
 
   /* -------------------- Stats -------------------- */
   const openCount = tickets.filter(t => t.status === "open").length;
@@ -167,6 +188,101 @@ const MyTickets = () => {
     return pages;
   };
 
+  /* -------------------- Skeleton -------------------- */
+  const renderSkeleton = () => (
+    <div className="min-h-screen bg-background flex">
+      <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+      <div className="flex-1 flex flex-col min-w-0">
+        <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
+          <div className="max-w-4xl mx-auto">
+            {/* Header skeleton */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+              <div>
+                <Skeleton className="h-9 w-40 mb-2" />
+                <Skeleton className="h-5 w-64" />
+              </div>
+              <Skeleton className="h-10 w-40" />
+            </div>
+
+            {/* Stats skeleton */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="progress-card">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="w-10 h-10 rounded-full" />
+                    <div>
+                      <Skeleton className="h-7 w-12 mb-1" />
+                      <Skeleton className="h-4 w-16" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Tickets list skeleton */}
+            <div className="progress-card">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-10 w-44" />
+              </div>
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="p-4 bg-muted/30 rounded-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-5 w-16 rounded-full" />
+                          <Skeleton className="h-5 w-14 rounded-full" />
+                        </div>
+                        <Skeleton className="h-5 w-64 mb-2" />
+                        <div className="flex items-center gap-4">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-4 w-20" />
+                        </div>
+                      </div>
+                      <Skeleton className="h-9 w-24" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+
+  /* -------------------- Error State -------------------- */
+  const renderError = () => (
+    <div className="min-h-screen bg-background flex">
+      <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+      <div className="flex-1 flex flex-col min-w-0">
+        <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+        <main className="flex-1 p-4 lg:p-6 overflow-y-auto flex items-center justify-center">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-foreground mb-2">Failed to Load Tickets</h2>
+            <p className="text-muted-foreground mb-6">{error}</p>
+            <Button onClick={() => fetchTickets()} variant="default">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Try Again
+            </Button>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+
+  if (loading) {
+    return renderSkeleton();
+  }
+
+  if (error && tickets.length === 0) {
+    return renderError();
+  }
+
   /* -------------------- UI -------------------- */
   return (
     <div className="min-h-screen bg-background flex">
@@ -190,12 +306,23 @@ const MyTickets = () => {
                   View and manage your support requests
                 </p>
               </div>
-              <Link to="/create-ticket">
-                <Button>
-                  <Ticket size={16} className="mr-2" />
-                  Create New Ticket
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchTickets(true)}
+                  disabled={refreshing}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                  Refresh
                 </Button>
-              </Link>
+                <Link to="/create-ticket">
+                  <Button>
+                    <Ticket size={16} className="mr-2" />
+                    Create New Ticket
+                  </Button>
+                </Link>
+              </div>
             </div>
 
             {/* Stats */}
@@ -267,15 +394,7 @@ const MyTickets = () => {
                 </div>
               </div>
 
-              {loading && (
-                <p className="text-sm text-muted-foreground">Loading tickets…</p>
-              )}
-
-              {error && (
-                <p className="text-sm text-red-600">{error}</p>
-              )}
-
-              {!loading && tickets.length === 0 && (
+              {tickets.length === 0 && (
                 <p className="text-sm text-muted-foreground">
                   You have no tickets yet.
                 </p>
