@@ -110,11 +110,12 @@ const MailingPreferences = () => {
       toast({
         title: 'Preferences Saved',
         description: 'Your mailing preferences have been updated successfully.',
+        variant: "success",
       });
     } catch (err) {
       toast({
         title: 'Error',
-        description: 'Failed to save preferences.',
+        description: err.message || "Failed to save preferences",
         variant: 'destructive',
       });
     } finally {
