@@ -420,11 +420,14 @@ const Profile = () => {
 
     setDeletingAccount(true);
     try {
+      const { getVisitorId } = await import('@/utils/fingerprint');
+      const deviceId = await getVisitorId();
+
       const res = await apiRequest<{ success: boolean; message?: string }>(
         '/api/user/account/delete',
         {
           method: 'DELETE',
-          body: { password: deletePassword },
+          body: { password: deletePassword, deviceId },
         }
       );
 
