@@ -101,6 +101,9 @@ const Profile = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletePasswordDialogOpen, setDeletePasswordDialogOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
 
   const [profile, setProfile] = useState<ProfileData>({
@@ -398,13 +401,30 @@ const Profile = () => {
     }
   };
 
+  const handleDeleteConfirm = () => {
+    setDeleteDialogOpen(false);
+    setDeletePassword('');
+    setShowDeletePassword(false);
+    setDeletePasswordDialogOpen(true);
+  };
+
   const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      showToast({
+        title: 'Password Required',
+        description: 'Please enter your password to confirm account deletion.',
+        type: 'error',
+      });
+      return;
+    }
+
     setDeletingAccount(true);
     try {
       const res = await apiRequest<{ success: boolean; message?: string }>(
         '/api/user/account/delete',
         {
           method: 'DELETE',
+          body: { password: deletePassword },
         }
       );
 
@@ -412,7 +432,6 @@ const Profile = () => {
         throw new Error(res?.message || 'Failed to delete account');
       }
 
-      // Redirect to login or home page after successful deletion
       window.location.href = '/';
     } catch (err: any) {
       console.error('Account deletion failed:', err);
@@ -421,9 +440,9 @@ const Profile = () => {
         description: err?.message || 'Failed to delete account. Please try again.',
         type: 'error',
       });
-      setDeleteDialogOpen(false);
     } finally {
       setDeletingAccount(false);
+      setDeletePassword('');
     }
   };
 
@@ -852,11 +871,68 @@ const Profile = () => {
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel disabled={deletingAccount}>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={handleDeleteAccount}
-                            disabled={deletingAccount}
+                            onClick={handleDeleteConfirm}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Yes, Delete My Account
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+
+                    {/* Password Confirmation Dialog */}
+                    <AlertDialog open={deletePasswordDialogOpen} onOpenChange={(open) => {
+                      setDeletePasswordDialogOpen(open);
+                      if (!open) {
+                        setDeletePassword('');
+                        setShowDeletePassword(false);
+                      }
+                    }}>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="flex items-center gap-3 text-destructive">
+                            <Lock size={24} />
+                            Confirm Your Password
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Please enter your password to confirm account deletion. This action is permanent.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <div className="py-4">
+                          <Label htmlFor="delete-password" className="mb-2 block">Password</Label>
+                          <div className="relative">
+                            <Input
+                              id="delete-password"
+                              type={showDeletePassword ? 'text' : 'password'}
+                              value={deletePassword}
+                              onChange={(e) => setDeletePassword(e.target.value)}
+                              placeholder="Enter your password"
+                              disabled={deletingAccount}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && deletePassword) {
+                                  handleDeleteAccount();
+                                }
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowDeletePassword(!showDeletePassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                              tabIndex={-1}
+                            >
+                              {showDeletePassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                          </div>
+                        </div>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel disabled={deletingAccount}>Cancel</AlertDialogCancel>
+                          <Button
+                            variant="destructive"
+                            onClick={handleDeleteAccount}
+                            disabled={deletingAccount || !deletePassword}
                           >
                             {deletingAccount ? (
                               <>
@@ -866,10 +942,10 @@ const Profile = () => {
                             ) : (
                               <>
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Yes, Delete My Account
+                                Delete Permanently
                               </>
                             )}
-                          </AlertDialogAction>
+                          </Button>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
