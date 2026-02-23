@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
 
     hmr: {
-      host: "christ-instead-tamil-mysterious.trycloudflare.com", // ✅ Your tunnel URL
+      host: "standings-classification-exceptional-allied.trycloudflare.com",
       protocol: "wss",
       clientPort: 443,
     },

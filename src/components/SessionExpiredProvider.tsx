@@ -33,7 +33,7 @@ const SessionExpiredProvider = ({
       <SessionExpiredDialog 
         open={showDialog} 
         onOpenChange={setShowDialog}
-        loginUrl={`https://6e9b2c50b484.ngrok-free.app/actions/social-login/auth/login?redirect=63ab42acbe1008c46bae760317da154175c5e18250cfcbeae7a96f64710d8302/after-login&provider=j365`}
+        loginUrl={loginUrl}
       />
     </>
   );

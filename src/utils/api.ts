@@ -23,7 +23,7 @@ class ApiError extends Error {
     this.status = status;
     this.data = data;
   }
-}
+};
 
 async function apiRequest<T = any>(
   path: string,
@@ -113,7 +113,7 @@ return data ?? {};
 
   // Success: return parsed data or empty object
   return (data ?? {}) as T;
-}
+};
 
 export default apiRequest;
 export { ApiError };
