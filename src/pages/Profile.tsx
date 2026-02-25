@@ -423,7 +423,7 @@ const Profile = () => {
       const { getVisitorId } = await import('@/utils/fingerprint');
       const deviceId = await getVisitorId();
 
-      const res = await apiRequest<{ success: boolean; message?: string }>(
+      const res = await apiRequest<{ success: boolean; message?: string; error?: string; url?: string }>(
         '/api/user/account/delete',
         {
           method: 'DELETE',
@@ -432,10 +432,10 @@ const Profile = () => {
       );
 
       if (!res?.success) {
-        throw new Error(res?.message || 'Failed to delete account');
+        throw new Error(res?.message || res?.error || 'Failed to delete account');
       }
 
-      window.location.href = '/';
+      window.location.href = res?.url;
     } catch (err: any) {
       console.error('Account deletion failed:', err);
       showToast({

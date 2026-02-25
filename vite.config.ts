@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
 
     hmr: {
-      host: "standings-classification-exceptional-allied.trycloudflare.com",
+      host: "approximate-cooling-conventions-kissing.trycloudflare.com",
       protocol: "wss",
       clientPort: 443,
     },
