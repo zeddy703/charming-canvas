@@ -3,7 +3,7 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { Award, Trophy, Star, Medal, Crown, Target, Users, Calendar, CheckCircle, Lock, LucideIcon, RefreshCw, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/sonner';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import apiRequest from '@/utils/api';
@@ -88,7 +88,7 @@ const ValleyOfExcellence = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
+  
 
   const fetchAchievements = async (isRefresh = false) => {
     try {
@@ -113,11 +113,7 @@ const ValleyOfExcellence = () => {
       const errorMessage = 'Unable to load achievements. Please try again.';
       setError(errorMessage);
       if (isRefresh) {
-        toast({
-          title: 'Refresh Failed',
-          description: errorMessage,
-          variant: 'destructive',
-        });
+        toast.error('Refresh Failed', errorMessage);
       }
     } finally {
       setLoading(false);

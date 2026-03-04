@@ -5,7 +5,7 @@ import Header from '@/components/Header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/sonner';
 import apiRequest from '@/utils/api';
 
 interface MemberInfo {
@@ -36,7 +36,7 @@ const MyAchievements = () => {
   const [memberInfo, setMemberInfo] = useState<MemberInfo | null>(null);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  
 
   useEffect(() => {
     const fetchMemberInfo = async () => {
@@ -95,17 +95,11 @@ const MyAchievements = () => {
   }, []);
 
   const handleDownloadCard = () => {
-    toast({
-      title: 'Downloading...',
-      description: 'Your membership card is being prepared for download.',
-    });
+    toast.info('Downloading...', 'Your membership card is being prepared for download.');
   };
 
   const handleDownloadCertificate = (certName: string) => {
-    toast({
-      title: 'Downloading...',
-      description: `${certName} is being prepared for download.`,
-    });
+    toast.info('Downloading...', `${certName} is being prepared for download.`);
   };
 
   const formatDate = (dateStr: string) => {

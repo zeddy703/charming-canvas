@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2, CreditCard, CheckCircle, XCircle, AlertTriangle, Smartphone, Currency } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/sonner';
 
 interface EventRegistrationDialogProps {
   isOpen: boolean;
@@ -179,7 +179,7 @@ type DialogStep =
   | 'error';
 
 const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDialogProps) => {
-  const { toast } = useToast();
+  
   const [step, setStep] = useState<DialogStep>('form');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -333,10 +333,7 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
           setStep('payment');
         } else {
           setStep('success');
-          toast({
-            title: 'Registration Successful',
-            description: `You have been registered for ${event.name}`,
-          });
+          toast.success('Registration Successful', `You have been registered for ${event.name}`);
         }
       } else {
         if(response?.status !== "completed" && response?.requiresPayment) {
@@ -384,11 +381,7 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
   // Step 2: Submit payment to backend
   const handlePaymentSubmit = async () => {
     if (!selectedPaymentMethod) {
-      toast({
-        title: 'Payment Required',
-        description: 'Please select a payment method',
-        variant: 'destructive',
-      });
+      toast.error('Payment Required', 'Please select a payment method');
       return;
     }
 
@@ -445,10 +438,7 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
           pollTransactionStatus(checkoutIdValue!);
         } else {
           setStep('success');
-          toast({
-            title: 'Payment Successful',
-            description: `Your registration for ${event.name} is complete`,
-          });
+          toast.success('Payment Successful', `Your registration for ${event.name} is complete`);
         }
       } else {
         setErrorMessage(response.message || 'Payment failed. Please try again.');
@@ -479,10 +469,7 @@ const EventRegistrationDialog = ({ isOpen, onClose, event }: EventRegistrationDi
 
       if (res.success && res.status === 'completed') {
         setStep('success');
-        toast({
-          title: 'Payment Successful',
-          description: res.message || `Your registration for ${event.name} is complete`,
-        });
+        toast.success('Payment Successful', res.message || `Your registration for ${event.name} is complete`);
       } else if (res.status === 'failed' || !res.success) {
         setErrorMessage(res.message || 'Payment failed. Please try again.');
         setStep('error');

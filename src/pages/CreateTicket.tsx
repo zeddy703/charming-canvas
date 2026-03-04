@@ -13,13 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from '@/components/ui/sonner';
 import { Link, useNavigate } from "react-router-dom";
 import apiRequest from "@/utils/api";
 
 const CreateTicket = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { toast } = useToast();
+  
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
@@ -49,11 +49,7 @@ const CreateTicket = () => {
 
     const error = validateForm();
     if (error) {
-      toast({
-        title: "Validation Error",
-        description: error,
-        variant: "destructive",
-      });
+      toast.error("Validation Error", error);
       return;
     }
 
@@ -78,22 +74,18 @@ const CreateTicket = () => {
         throw new Error(response?.error || "Failed to submit ticket");
       }
 
-      toast({
-        title: "Ticket Created",
-        description:
-          "Your support ticket has been submitted successfully. We'll respond within 24–48 hours.",
-          variant: "success"
-      });
+      toast.success(
+        "Ticket Created",
+        "Your support ticket has been submitted successfully. We'll respond within 24–48 hours."
+      );
 
       navigate("/my-tickets");
     } catch (err: any) {
       //console.log(Response)
-      toast({
-        title: err?.title || "Submission Failed",
-        description:
-          err?.message || "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
+      toast.error(
+        err?.title || "Submission Failed",
+        err?.message || "Something went wrong. Please try again."
+      );
     } finally {
       setLoading(false);
     }

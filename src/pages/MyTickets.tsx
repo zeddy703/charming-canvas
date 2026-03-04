@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import apiRequest from "@/utils/api";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from '@/components/ui/sonner';
 import {
   Pagination,
   PaginationContent,
@@ -100,7 +100,7 @@ const MyTickets = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortOption>("date-desc");
   const [refreshing, setRefreshing] = useState(false);
-  const { toast } = useToast();
+  
 
   const priorityOrder = { high: 3, medium: 2, low: 1 };
 
@@ -129,17 +129,13 @@ const MyTickets = () => {
       const message = err?.message || "Something went wrong";
       setError(message);
       if (isRefresh) {
-        toast({
-          title: "Refresh Failed",
-          description: message,
-          variant: "destructive",
-        });
+        toast.error("Refresh Failed", message);
       }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     fetchTickets();

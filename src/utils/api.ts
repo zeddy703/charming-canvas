@@ -7,7 +7,7 @@ interface ApiOptions {
   body?: Record<string, any> | FormData;
   headers?: Record<string, string>;
   credentials?: RequestCredentials;
-  showErrorToast?: boolean; // Optional: auto-show toast on error
+  showErrorToast?: boolean;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -60,15 +60,10 @@ async function apiRequest<T = any>(
   try {
     response = await fetch(url, config);
   } catch (err) {
-    // Network error (no connection, CORS, timeout, etc.)
     const message = 'Network error. Please check your connection.';
     if (showErrorToast) {
-      const { toast } = await import('@/components/ui/use-toast');
-      toast({
-        title: 'Connection Failed',
-        description: message,
-        variant: 'destructive',
-      });
+      const { toast } = await import('@/components/ui/sonner');
+      toast.error('Connection Failed', message);
     }
     throw new ApiError(message, 0);
   }
@@ -97,21 +92,15 @@ async function apiRequest<T = any>(
     'An unexpected error occurred. Please try again.';
 
   if (showErrorToast) {
-    const { toast } = await import('@/components/ui/use-toast');
-    toast({
-      title: 'Request Failed',
-      description: message,
-      variant: 'destructive',
-    });
+    const { toast } = await import('@/components/ui/sonner');
+    toast.error('Request Failed', message);
   }
    
-//  throw new ApiError(message, response.status, data);
-return data ?? {};
+  return data ?? {};
   
 }
 
 
-  // Success: return parsed data or empty object
   return (data ?? {}) as T;
 };
 
