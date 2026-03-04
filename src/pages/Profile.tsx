@@ -36,7 +36,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from '@/components/ui/sonner';
 import apiRequest from '@/utils/api';
 import PasswordStrengthIndicator from '@/components/PasswordStrengthIndicator';
 
@@ -57,8 +57,6 @@ interface ProfileData {
 }
 
 const Profile = () => {
-  const { toast } = useToast();
-
   const showToast = ({
     title,
     description,
@@ -68,15 +66,16 @@ const Profile = () => {
     description?: string;
     type?: 'success' | 'error';
   }) => {
-    toast({
-      title: title || (type === 'success' ? 'Success' : 'Error'),
-      description:
-        description ||
-        (type === 'success'
-          ? 'Operation completed successfully.'
-          : 'An unexpected error occurred. Please try again.'),
-      variant: type === 'success' ? 'success' : 'destructive',
-    });
+    const t = title || (type === 'success' ? 'Success' : 'Error');
+    const d = description ||
+      (type === 'success'
+        ? 'Operation completed successfully.'
+        : 'An unexpected error occurred. Please try again.');
+    if (type === 'success') {
+      toast.success(t, d);
+    } else {
+      toast.error(t, d);
+    }
   };
 
   const [sidebarOpen, setSidebarOpen] = useState(false);

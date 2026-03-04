@@ -5,7 +5,7 @@ import { Users, Mail, Phone, MapPin, Search, Crown, Shield, Star, RefreshCw, Ale
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/sonner';
 import apiRequest from '@/utils/api';
 
 type ContactPerson = {
@@ -54,7 +54,7 @@ const Contacts = () => {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [contactsData, setContactsData] = useState<ContactsData | null>(null);
-  const { toast } = useToast();
+  
 
   const fetchContacts = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
@@ -78,17 +78,13 @@ const Contacts = () => {
       setContactsData(fallbackData);
       const message = 'Failed to load contacts. Showing cached data.';
       if (isRefresh) {
-        toast({
-          title: 'Refresh Failed',
-          description: message,
-          variant: 'destructive',
-        });
+        toast.error('Refresh Failed', message);
       }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     fetchContacts();

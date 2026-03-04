@@ -18,7 +18,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from '@/components/ui/sonner';
 import apiRequest from '@/utils/api';
 import PaymentConfirmationDialog from '@/components/PaymentConfirmationDialog';
 import PaypalPaymentOverlay from '@/components/PaypalPaymentOverlay';
@@ -55,7 +55,6 @@ const iconMap = {
 };
 
 const Payments = () => {
-  const { toast } = useToast();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<string>('');
@@ -128,18 +127,14 @@ const Payments = () => {
 
       } catch (err) {
         console.error('Failed to load payment data:', err);
-        toast({
-          title: 'Loading Failed',
-          description: 'Could not load payment information.',
-          variant: 'destructive',
-        });
+        toast.error('Loading Failed', 'Could not load payment information.');
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [toast]);
+  }, []);
 
   const handleMakePayment = async () => {
     const method = paymentMethods.find(m => m.id === selectedMethod);
@@ -154,11 +149,7 @@ const Payments = () => {
 
     const requiresPhone = method.id === 'mpesa' || method.id === 'airtelmoney';
     if (requiresPhone && !phoneNumber.trim()) {
-      toast({
-        title: 'Phone Number Required',
-        description: 'Please enter your registered mobile money number.',
-        variant: 'destructive',
-      });
+      toast.error('Phone Number Required', 'Please enter your registered mobile money number.');
       return;
     }
 
@@ -217,11 +208,7 @@ const Payments = () => {
         setIsConfirmationOpen(true);
       }
     } catch (err) {
-      toast({
-        title: 'Payment Failed',
-        description: 'Could not start payment. Please try again.',
-        variant: 'destructive',
-      });
+      toast.error('Payment Failed', 'Could not start payment. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -229,20 +216,13 @@ const Payments = () => {
 
   const handlePaymentSuccess = () => {
     // Refresh payment history after successful payment
-    toast({
-      title: 'Payment Successful',
-      description: 'Your payment has been processed successfully.',
-    });
+    toast.success('Payment Successful', 'Your payment has been processed successfully.');
     // Optionally refresh the page data
     window.location.reload();
   };
 
   const handlePaymentFailure = (message: string) => {
-    toast({
-      title: 'Payment Failed',
-      description: message,
-      variant: 'destructive',
-    });
+    toast.error('Payment Failed', message);
   };
 
   if (loading) {

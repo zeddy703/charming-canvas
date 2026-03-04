@@ -2,22 +2,19 @@ import { CheckCircle, ArrowLeft, Copy } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from '@/components/ui/sonner';
 
 const PaypalSuccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { toast } = useToast();
+  
 
   const transactionRef = searchParams.get("receipt") || searchParams.get("paymentId") || searchParams.get("ref");
 
   const copyToClipboard = () => {
     if (transactionRef) {
       navigator.clipboard.writeText(transactionRef);
-      toast({
-        title: "Copied!",
-        description: "Transaction reference copied to clipboard.",
-      });
+      toast.success("Copied!", "Transaction reference copied to clipboard.");
     }
   };
 

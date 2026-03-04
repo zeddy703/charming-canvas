@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/sonner';
 import apiRequest from '@/utils/api';
 
 const iconMap: Record<string, any> = {
@@ -38,7 +38,7 @@ type PreferenceItem = {
 
 const MailingPreferences = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { toast } = useToast();
+  
 
   const [preferences, setPreferences] = useState<PreferenceItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,17 +67,13 @@ const MailingPreferences = () => {
       const message = 'Failed to load preferences.';
       setError(message);
       if (isRefresh) {
-        toast({
-          title: 'Refresh Failed',
-          description: message,
-          variant: 'destructive',
-        });
+        toast.error('Refresh Failed', message);
       }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     fetchPreferences();
@@ -107,17 +103,9 @@ const MailingPreferences = () => {
 
       if (!res.success) throw new Error(res.error);
 
-      toast({
-        title: 'Preferences Saved',
-        description: 'Your mailing preferences have been updated successfully.',
-        variant: "success",
-      });
+      toast.success('Preferences Saved', 'Your mailing preferences have been updated successfully.');
     } catch (err) {
-      toast({
-        title: 'Error',
-        description: err.message || "Failed to save preferences",
-        variant: 'destructive',
-      });
+      toast.error('Error', err.message || "Failed to save preferences");
     } finally {
       setSaving(false);
     }
