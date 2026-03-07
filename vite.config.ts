@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
 
     hmr: {
-      host: "approximate-cooling-conventions-kissing.trycloudflare.com",
+      host: "heritage-bomb-tried-grow.trycloudflare.com",
       protocol: "wss",
       clientPort: 443,
     },

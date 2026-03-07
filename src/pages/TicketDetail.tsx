@@ -71,7 +71,7 @@ type Reply = {
   id: string;
   message: string;
   author: string;
-  authorType: "user" | "support";
+  sender: "user" | "support";
   createdAt: string;
 };
 
@@ -129,7 +129,7 @@ const TicketDetailPage = () => {
 
     try {
       setSubmitting(true);
-      const res = await apiRequest(`/api/tickets/user/reply/${id}`, {
+      const res = await apiRequest(`/api/user/tickets/reply/${id}`, {
         method: "POST",
         body: { message: replyMessage.trim() },
       });
@@ -284,7 +284,7 @@ const TicketDetailPage = () => {
                         {index > 0 && <Separator className="my-4" />}
                         <div
                           className={`p-4 rounded-lg ${
-                            reply.authorType === "support"
+                            reply.sender === "support"
                               ? "bg-primary/5 border-l-4 border-primary"
                               : "bg-muted/30"
                           }`}
@@ -292,7 +292,7 @@ const TicketDetailPage = () => {
                           <div className="flex items-center gap-2 mb-2">
                             <div
                               className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                reply.authorType === "support"
+                                reply.sender === "support"
                                   ? "bg-primary/10 text-primary"
                                   : "bg-muted text-muted-foreground"
                               }`}
@@ -301,7 +301,7 @@ const TicketDetailPage = () => {
                             </div>
                             <div>
                               <span className="font-medium">{reply.author}</span>
-                              {reply.authorType === "support" && (
+                              {reply.sender === "support" && (
                                 <Badge
                                   variant="secondary"
                                   className="ml-2 text-xs"
